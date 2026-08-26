@@ -1,5 +1,12 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+.playwright-screenshot/*
+!.playwright-screenshot/.gitkeep
+
+.playwright-mcp/*
+!.playwright-mcp/.gitkeep
+
+
 # dependencies
 /node_modules
 /.pnp
@@ -35,6 +42,10 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# playwright mcp
+/.playwright-mcp/
+/.playwright-screenshot/
 
 # typescript
 *.tsbuildinfo
