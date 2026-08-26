@@ -1,6 +1,6 @@
 # 01 · MVP — Pantallas visuales de Arcade Vault
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
 - **Depende de:** Ninguno
 - **Fecha:** 2026-08-24
 - **Objetivo:** Implementar la capa visual completa de las 5 pantallas de Arcade Vault (Biblioteca, Detalle de juego, Reproductor, Auth y Salón de la Fama) como páginas reales del App Router de Next.js, replicando el diseño y la interactividad local de los templates de referencia, sin lógica de juego real ni persistencia entre pantallas.
