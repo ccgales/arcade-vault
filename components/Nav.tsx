@@ -10,7 +10,7 @@ export default function Nav() {
 
   const isActive = (name: "biblioteca" | "salon") => {
     if (name === "biblioteca") {
-      return pathname === "/" || pathname.startsWith("/juegos");
+      return pathname.startsWith("/biblioteca") || pathname.startsWith("/juegos");
     }
     return pathname.startsWith("/salon");
   };
@@ -27,7 +27,7 @@ export default function Nav() {
           </div>
         </Link>
         <div className="links">
-          <Link href="/" className={isActive("biblioteca") ? "active" : ""}>
+          <Link href="/biblioteca" className={isActive("biblioteca") ? "active" : ""}>
             Biblioteca
           </Link>
           <Link href="/salon" className={isActive("salon") ? "active" : ""}>
@@ -60,7 +60,7 @@ export default function Nav() {
           MENÚ
         </div>
         <Link
-          href="/"
+          href="/biblioteca"
           className={isActive("biblioteca") ? "active" : ""}
           onClick={close}
         >

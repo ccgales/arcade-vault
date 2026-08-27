@@ -12,7 +12,7 @@ export default function Auth() {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/");
+    router.push("/biblioteca");
   };
 
   return (
@@ -72,7 +72,7 @@ export default function Auth() {
         <button
           className="btn ghost"
           style={{ width: "100%", marginTop: 10 }}
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/biblioteca")}
         >
           JUGAR COMO INVITADO
         </button>
