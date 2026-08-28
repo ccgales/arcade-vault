@@ -1,6 +1,6 @@
 # 03 · Página About + formulario de contacto (Resend)
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
 - **Depende de:** SPEC 02
 - **Fecha:** 2026-08-26
 - **Objetivo:** Implementar la página About de Arcade Vault (`about.jsx` de `references/templates/home-about/`) como la nueva ruta `/acerca-de`, con un formulario de contacto que envía correos reales mediante Resend en vez de la simulación del template.
