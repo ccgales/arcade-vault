@@ -76,17 +76,44 @@ export default function About() {
   useReveal();
 
   const [form, setForm] = useState<ContactFormState>({ name: "", email: "", msg: "" });
+  const [website, setWebsite] = useState("");
   const [sent, setSent] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.msg.trim()) {
       setShake(true);
       setTimeout(() => setShake(false), 400);
       return;
     }
-    setSent(form.name.trim());
+
+    setError(null);
+    setSending(true);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          message: form.msg.trim(),
+          website,
+        }),
+      });
+      const data: { ok: boolean; error?: string } = await res.json();
+      if (data.ok) {
+        setSent(form.name.trim());
+      } else {
+        setError(data.error ?? "No se pudo enviar el mensaje. Intenta de nuevo más tarde.");
+      }
+    } catch {
+      setError("No se pudo enviar el mensaje. Intenta de nuevo más tarde.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -146,6 +173,21 @@ export default function About() {
           <form className={"contact-form" + (shake ? " shake" : "")} onSubmit={onSubmit}>
             {!sent ? (
               <>
+                <div
+                  aria-hidden="true"
+                  style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", overflow: "hidden" }}
+                >
+                  <label htmlFor="website">Sitio web</label>
+                  <input
+                    id="website"
+                    name="website"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                  />
+                </div>
                 <div className="field">
                   <label>NOMBRE</label>
                   <input
@@ -172,8 +214,13 @@ export default function About() {
                     placeholder="Cuéntanos qué tienes en mente…"
                   ></textarea>
                 </div>
-                <button className="btn xl press" type="submit" style={{ width: "100%" }}>
-                  ▶ ENVIAR MENSAJE
+                {error && (
+                  <div className="mono" style={{ color: "var(--magenta)", fontSize: 12, marginBottom: 12 }}>
+                    {error}
+                  </div>
+                )}
+                <button className="btn xl press" type="submit" disabled={sending} style={{ width: "100%" }}>
+                  {sending ? "ENVIANDO…" : "▶ ENVIAR MENSAJE"}
                 </button>
               </>
             ) : (
