@@ -9,7 +9,7 @@ export interface ContactEmailInput {
 }
 
 export async function sendContactEmail({ name, email, message }: ContactEmailInput) {
-  return resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: "Arcade Vault <onboarding@resend.dev>",
     to: process.env.CONTACT_TO_EMAIL as string,
     replyTo: email,
@@ -21,4 +21,10 @@ export async function sendContactEmail({ name, email, message }: ContactEmailInp
       <p>${message.replace(/\n/g, "<br>")}</p>
     `,
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
 }
