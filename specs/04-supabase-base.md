@@ -1,6 +1,6 @@
 # 04 · Infraestructura base de Supabase
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
 - **Depende de:** Ninguna
 - **Fecha:** 2026-08-31
 - **Objetivo:** Instalar y configurar la infraestructura base de Supabase (clientes de browser y server, variables de entorno, y un endpoint de health-check) para que specs futuros de autenticación y persistencia de datos puedan apoyarse en ella, sin modificar ninguna pantalla ni funcionalidad existente.
