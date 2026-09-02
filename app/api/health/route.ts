@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
   const supabase = await createClient();
-  const { error } = await supabase.auth.getSession();
+  const { error } = await supabase.storage.listBuckets();
 
   if (error) {
     return Response.json({ ok: false, error: error.message }, { status: 500 });
