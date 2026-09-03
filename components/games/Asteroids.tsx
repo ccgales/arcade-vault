@@ -630,7 +630,13 @@ function Asteroids(
       ref={canvasRef}
       width={W}
       height={H}
-      style={{ width: "100%", height: "100%", display: "block" }}
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        display: "block",
+      }}
     />
   );
 }
