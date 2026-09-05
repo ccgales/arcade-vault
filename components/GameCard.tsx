@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef } from "react";
-import type { Game } from "@/lib/data";
+import type { Game } from "@/lib/games";
 
 export default function GameCard({ game }: { game: Game }) {
   const tiltRef = useRef<HTMLAnchorElement>(null);
@@ -23,7 +23,11 @@ export default function GameCard({ game }: { game: Game }) {
   };
 
   const btnColor =
-    game.color === "magenta" ? "magenta" : game.color === "yellow" ? "yellow" : "";
+    game.color === "magenta"
+      ? "magenta"
+      : game.color === "yellow"
+        ? "yellow"
+        : "";
 
   return (
     <Link

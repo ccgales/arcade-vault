@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation";
-import { GAMES } from "@/lib/data";
+import { getGameById } from "@/lib/games";
+import { getScoresByGame } from "@/lib/scores.server";
 import GameDetail from "@/components/GameDetail";
 
 export default async function GameDetailPage(props: PageProps<"/juegos/[id]">) {
   const { id } = await props.params;
-  const game = GAMES.find((g) => g.id === id);
+  const game = await getGameById(id);
 
   if (!game) notFound();
 
-  return <GameDetail game={game} />;
+  const scores = await getScoresByGame(id);
+
+  return <GameDetail game={game} scores={scores} />;
 }

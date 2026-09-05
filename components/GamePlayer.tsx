@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Game } from "@/lib/data";
+import type { Game } from "@/lib/games";
+import { insertScore } from "@/lib/scores";
 import Asteroids, {
   type AsteroidsHandle,
   type AsteroidsState,
@@ -54,6 +55,16 @@ export default function GamePlayer({ game }: { game: Game }) {
       asteroidsRef.current?.endGame();
     } else {
       setOver(true);
+    }
+  };
+
+  const saveScore = async () => {
+    try {
+      await insertScore(game.id, name, score);
+      setSaved(true);
+      router.refresh();
+    } catch {
+      // el guardado falló; "saved" queda en false para que el jugador reintente manualmente
     }
   };
 
@@ -176,7 +187,7 @@ export default function GamePlayer({ game }: { game: Game }) {
                   }
                   placeholder="TUS INICIALES"
                 />
-                <button className="btn yellow" onClick={() => setSaved(true)}>
+                <button className="btn yellow" onClick={saveScore}>
                   GUARDAR PUNTUACIÓN
                 </button>
               </div>
