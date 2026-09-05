@@ -1,6 +1,6 @@
 import HallOfFame from "@/components/HallOfFame";
 import { getGames } from "@/lib/games";
-import { getScoresByGame } from "@/lib/scores";
+import { getScoresByGame } from "@/lib/scores.server";
 
 export default async function SalonPage() {
   const games = await getGames();

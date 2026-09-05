@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { createClient as createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export interface ScoreRow {
@@ -9,7 +8,7 @@ export interface ScoreRow {
   date: string;
 }
 
-const DEFAULT_LIMIT = 12;
+export const DEFAULT_SCORES_LIMIT = 12;
 
 type ScoreQueryRow = {
   player_name: string;
@@ -33,7 +32,7 @@ function toScoreRows(rows: ScoreQueryRow[]): ScoreRow[] {
   }));
 }
 
-async function fetchScores(
+export async function fetchScores(
   supabase: SupabaseClient,
   gameId: string,
   limit: number,
@@ -50,19 +49,10 @@ async function fetchScores(
   return toScoreRows((data ?? []) as ScoreQueryRow[]);
 }
 
-// Server-side: para usar desde Server Components (Detalle de juego, Salón de la Fama).
-export async function getScoresByGame(
-  gameId: string,
-  limit: number = DEFAULT_LIMIT,
-): Promise<ScoreRow[]> {
-  const supabase = await createServerSupabaseClient();
-  return fetchScores(supabase, gameId, limit);
-}
-
 // Client-side: para usar desde Client Components (HallOfFame al cambiar de tab).
 export async function getScoresByGameClient(
   gameId: string,
-  limit: number = DEFAULT_LIMIT,
+  limit: number = DEFAULT_SCORES_LIMIT,
 ): Promise<ScoreRow[]> {
   const supabase = createBrowserSupabaseClient();
   return fetchScores(supabase, gameId, limit);
