@@ -1,6 +1,6 @@
 # 06 · Leaderboard real y tabla de juegos en Supabase
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
 - **Depende de:** SPEC 04, SPEC 05
 - **Fecha:** 2026-09-04
 - **Objetivo:** Migrar el catálogo de juegos y las puntuaciones a tablas reales de Supabase (`games` y `scores`), reemplazando `GAMES`/`seededScores()` de `lib/data.ts` como fuente de verdad en Biblioteca, Detalle de juego, Salón de la Fama y el botón "GUARDAR PUNTUACIÓN" del reproductor.
