@@ -1,12 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { GAMES, seededScores } from "@/lib/data";
+import type { Game } from "@/lib/games";
+import { getScoresByGameClient, type ScoreRow } from "@/lib/scores";
 
-export default function HallOfFame() {
-  const [tab, setTab] = useState(GAMES[0].id);
-  const rows = useMemo(() => seededScores(tab.length * 23 + 7, 12), [tab]);
+export default function HallOfFame({
+  games,
+  initialScores,
+}: {
+  games: Game[];
+  initialScores: ScoreRow[];
+}) {
+  const [tab, setTab] = useState(games[0]?.id ?? "");
+  const [rows, setRows] = useState<ScoreRow[]>(initialScores);
+
+  const selectTab = async (gameId: string) => {
+    setTab(gameId);
+    const scores = await getScoresByGameClient(gameId);
+    setRows(scores);
+  };
 
   return (
     <div className="av-hall fade-in">
@@ -18,11 +31,11 @@ export default function HallOfFame() {
       </div>
 
       <div className="hall-tabs">
-        {GAMES.map((g) => (
+        {games.map((g) => (
           <button
             key={g.id}
             className={"chip" + (tab === g.id ? " active" : "")}
-            onClick={() => setTab(g.id)}
+            onClick={() => selectTab(g.id)}
           >
             {g.title}
           </button>
@@ -37,7 +50,14 @@ export default function HallOfFame() {
           <div className="date">{rows[1].date}</div>
         </div>
         <div className="podium-slot gold">
-          <div className="pixel" style={{ fontSize: 9, color: "var(--gold)", letterSpacing: "0.18em" }}>
+          <div
+            className="pixel"
+            style={{
+              fontSize: 9,
+              color: "var(--gold)",
+              letterSpacing: "0.18em",
+            }}
+          >
             CAMPEÓN
           </div>
           <div className="rank-num" style={{ fontSize: 36, marginTop: 4 }}>
@@ -67,7 +87,10 @@ export default function HallOfFame() {
         {rows.map((r, i) => (
           <div
             key={r.name + i}
-            className={"tr" + (i === 0 ? " top1" : i === 1 ? " top2" : i === 2 ? " top3" : "")}
+            className={
+              "tr" +
+              (i === 0 ? " top1" : i === 1 ? " top2" : i === 2 ? " top3" : "")
+            }
             style={{ animationDelay: `${i * 50}ms` }}
           >
             <div className="rk">#{String(r.rank).padStart(2, "0")}</div>
