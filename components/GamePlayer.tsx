@@ -1,17 +1,41 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ForwardRefExoticComponent, RefAttributes } from "react";
 import { useRouter } from "next/navigation";
 import type { Game } from "@/lib/games";
 import { insertScore } from "@/lib/scores";
-import Asteroids, {
-  type AsteroidsHandle,
-  type AsteroidsState,
-} from "@/components/games/Asteroids";
+import Asteroids from "@/components/games/Asteroids";
+import Tetris from "@/components/games/Tetris";
+
+interface RealGameState {
+  score: number;
+  lives: number;
+  level: number;
+}
+
+interface RealGameProps {
+  paused: boolean;
+  onStateChange: (state: RealGameState) => void;
+  onGameOver: (finalScore: number) => void;
+}
+
+interface RealGameHandle {
+  endGame: () => void;
+}
+
+type RealGameComponent = ForwardRefExoticComponent<
+  RealGameProps & RefAttributes<RealGameHandle>
+>;
+
+const REAL_GAMES: Partial<Record<string, RealGameComponent>> = {
+  asteroides: Asteroids,
+  caida: Tetris,
+};
 
 export default function GamePlayer({ game }: { game: Game }) {
   const router = useRouter();
-  const isAsteroids = game.id === "asteroides";
+  const RealGame = REAL_GAMES[game.id];
 
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -22,37 +46,37 @@ export default function GamePlayer({ game }: { game: Game }) {
   const [saved, setSaved] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
-  const asteroidsRef = useRef<AsteroidsHandle>(null);
+  const realGameRef = useRef<RealGameHandle>(null);
 
   useEffect(() => {
-    if (isAsteroids) return;
+    if (RealGame) return;
     if (over || paused) return;
     const t = setInterval(
       () => setScore((s) => s + Math.floor(10 + Math.random() * 90)),
       220,
     );
     return () => clearInterval(t);
-  }, [isAsteroids, over, paused]);
+  }, [RealGame, over, paused]);
 
   useEffect(() => {
-    if (isAsteroids) return;
+    if (RealGame) return;
     if (score > 0 && score % 2500 < 100) setLevel((l) => l + 1);
-  }, [isAsteroids, score]);
+  }, [RealGame, score]);
 
-  const handleAsteroidsStateChange = (state: AsteroidsState) => {
+  const handleRealGameStateChange = (state: RealGameState) => {
     setScore(state.score);
     setLives(state.lives);
     setLevel(state.level);
   };
 
-  const handleAsteroidsGameOver = (finalScore: number) => {
+  const handleRealGameOver = (finalScore: number) => {
     setScore(finalScore);
     setOver(true);
   };
 
   const endGame = () => {
-    if (isAsteroids) {
-      asteroidsRef.current?.endGame();
+    if (RealGame) {
+      realGameRef.current?.endGame();
     } else {
       setOver(true);
     }
@@ -72,7 +96,7 @@ export default function GamePlayer({ game }: { game: Game }) {
     setPaused(false);
     setOver(false);
     setSaved(false);
-    if (isAsteroids) {
+    if (RealGame) {
       setScore(0);
       setLives(3);
       setLevel(1);
@@ -124,13 +148,13 @@ export default function GamePlayer({ game }: { game: Game }) {
 
       <div className="crt">
         <div className="crt-screen">
-          {isAsteroids ? (
-            <Asteroids
+          {RealGame ? (
+            <RealGame
               key={resetKey}
-              ref={asteroidsRef}
+              ref={realGameRef}
               paused={paused}
-              onStateChange={handleAsteroidsStateChange}
-              onGameOver={handleAsteroidsGameOver}
+              onStateChange={handleRealGameStateChange}
+              onGameOver={handleRealGameOver}
             />
           ) : (
             <div className="game-arena">
