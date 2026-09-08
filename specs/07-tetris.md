@@ -5,6 +5,7 @@
 - **Fecha:** 2026-09-07
 - **Objetivo:** Reemplazar el `GamePlayer` simulado de "CAÍDA" por el juego real de Tetris (`references/started-games/03-tetris/game.js`) portado a un componente React/TypeScript en canvas, integrado con el HUD, la pausa y el modal de fin de partida ya existentes, sin tocar el catálogo ni las puntuaciones ya sembradas en Supabase.
 
+
 ## Scope
 
 **Dentro:**
