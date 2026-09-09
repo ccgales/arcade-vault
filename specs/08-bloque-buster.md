@@ -9,6 +9,7 @@
 
 **Dentro:**
 
+
 - Nuevo componente `components/games/BloqueBuster.tsx` (Client Component) que porta a TypeScript toda la lógica de `references/started-games/04-arkanoid/game.js` + `levels.js`: paleta controlada por teclado, pelota con rebotes en paredes/paleta/bloques (colisión AABB), 5 niveles con sus patrones de bloques y multiplicador de velocidad (`speed: 1.00 → 1.46`), puntuación (+10 por bloque), 3 vidas, y avance de nivel al limpiar todos los bloques — manteniendo las mecánicas idénticas al original (dimensiones de bloque 64×24, 10×6 grilla, velocidades base de la pelota, rango de rebote en la paleta).
 - El componente renderiza un único `<canvas>` de resolución interna fija 800×600 (idéntica a la del original — no requiere reescalar como sí hizo SPEC 07 con Tetris), escalado a 100% de ancho/alto de su contenedor vía CSS, igual criterio que `Asteroids.tsx`/`Tetris.tsx`.
 - Controles: solo teclado, flecha izquierda/derecha mueven la paleta (`PADDLE_SPEED = 400px/s`, igual al original); se agrega `preventDefault()` en esas teclas. El control por mouse (`mousemove`) del original **no se porta** (ver Decisiones).
