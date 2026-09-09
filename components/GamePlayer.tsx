@@ -7,6 +7,7 @@ import type { Game } from "@/lib/games";
 import { insertScore } from "@/lib/scores";
 import Asteroids from "@/components/games/Asteroids";
 import Tetris from "@/components/games/Tetris";
+import BloqueBuster from "@/components/games/BloqueBuster";
 
 interface RealGameState {
   score: number;
@@ -31,6 +32,7 @@ type RealGameComponent = ForwardRefExoticComponent<
 const REAL_GAMES: Partial<Record<string, RealGameComponent>> = {
   asteroides: Asteroids,
   caida: Tetris,
+  "bloque-buster": BloqueBuster,
 };
 
 export default function GamePlayer({ game }: { game: Game }) {
