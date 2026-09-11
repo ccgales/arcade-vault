@@ -8,6 +8,7 @@ import { insertScore } from "@/lib/scores";
 import Asteroids from "@/components/games/Asteroids";
 import Tetris from "@/components/games/Tetris";
 import BloqueBuster from "@/components/games/BloqueBuster";
+import Snake from "@/components/games/Snake";
 
 interface RealGameState {
   score: number;
@@ -33,6 +34,7 @@ const REAL_GAMES: Partial<Record<string, RealGameComponent>> = {
   asteroides: Asteroids,
   caida: Tetris,
   "bloque-buster": BloqueBuster,
+  serpentina: Snake,
 };
 
 export default function GamePlayer({ game }: { game: Game }) {
