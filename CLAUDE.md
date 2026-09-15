@@ -6,11 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Arcade Vault — a platform for playing games online and competing for high scores (`README.md`). The repo is currently a fresh `create-next-app` scaffold (App Router) with no game/vault features implemented yet — `app/page.tsx` is still the default Next.js starter page.
+Arcade Vault — a platform for playing games online and competing for high scores (`README.md`). The scaffold stage is done: the app has a real catalog, game pages, four playable canvas games wired to a real Supabase leaderboard, a contact form (Resend), and a simulated auth flow.
 
-The README describes an intended Spec Driven Design workflow using the `Klerith/fernando-skills` skill pack (`npx skills@latest add Klerith/fernando-skills`, driven via `/spec` and `/spec-impl`). That skill pack is not currently installed in this repo — check for a `/spec` skill before assuming it's available.
+This repo follows Spec Driven Design (`Klerith/fernando-skills`, https://github.com/Klerith/fernando-skills). The skill pack **is installed locally** at `.claude/skills/` (`spec`, `spec-impl`), plus a repo-specific `add-game` skill (see below) — don't assume it's missing. Every implemented feature has a corresponding spec in `specs/NN-slug.md`; check there first for the intent/decisions behind any area before changing it.
 
-There is no test runner configured yet.
+There is no test runner configured yet. Verification is manual: `npm run dev` + click through the flow, `npm run build` for type/lint errors.
+
+A `PostToolUse` hook (`.claude/settings.json`) auto-runs Prettier (and ESLint `--fix` for `.ts/.tsx/.js/.jsx`) on every file touched by `Write`/`Edit` — don't hand-format or manually re-run lint/format after an edit, the hook already did it.
 
 ## Working with this Next.js version
 
@@ -20,12 +22,52 @@ There is no test runner configured yet.
 
 ## Skills
 
-Usa siempre /frontend-design para diseñar la interfaz de usuario.
+- Usa siempre `/frontend-design` para diseñar la interfaz de usuario.
+- `/spec` — designs a new spec section by section (`.claude/skills/spec/`, template at `.claude/skills/spec/template.md`). Use before any large feature.
+- `/spec-impl` — implements an already-Approved spec: creates its branch, works step by step with review pauses.
+- `/add-game` (`.claude/skills/add-game/SKILL.md`, repo-specific) — the recipe for adding a new playable game: writes the spec, ports/builds the `components/games/<Name>.tsx` canvas component under the shared state/props/ref contract, wires it into `GamePlayer.tsx`'s `REAL_GAMES` registry, and (if it's a brand-new catalog entry, not a reslot of an existing simulated one) adds a cover class + a new numbered SQL migration. Read this file before touching anything game-related — it documents the whole contract in detail.
 
 ## Architecture
 
 - **App Router only**, TypeScript, path alias `@/*` → repo root (`tsconfig.json`).
 - `app/layout.tsx` — root layout; loads `Geist`/`Geist_Mono` fonts via `next/font/google` and sets them as CSS variables.
-- `app/globals.css` — Tailwind v4 (via `@tailwindcss/postcss`, no `tailwind.config.*` — v4 uses CSS-based config).
-- Styling is Tailwind utility classes with dark-mode variants (`dark:`) throughout.
-- `app/page.tsx` - home route (`/`)
+- `app/globals.css` — Tailwind v4 (via `@tailwindcss/postcss`, no `tailwind.config.*` — v4 uses CSS-based config). All game covers are CSS-only (`.cover-<slug>` classes), no image assets.
+- Styling is Tailwind utility classes with dark-mode variants (`dark:`) throughout, plus a neon/CRT arcade theme (`neon-cyan`, `.crt-screen`, etc.) defined in `globals.css`.
+
+### Routes (`app/`)
+
+- `/` (`page.tsx`) → `Home` — landing page, reads `getGames()`.
+- `/biblioteca` → `Library` — full catalog, filterable by `lib/data.ts`'s `CATS` (`TODOS`/`ARCADE`/`PUZZLE`/`SHOOTER`/`VERSUS`).
+- `/juegos/[id]` → `GameDetail` — one game's info + its leaderboard (`getScoresByGame`).
+- `/juegos/[id]/jugar` → `GamePlayer` — the actual play screen (HUD, pause, game-over modal, save score).
+- `/salon` → `HallOfFame` — cross-game leaderboard / podium ("Salón de la Fama"), tabbed by game.
+- `/acerca-de` → `About` — bio + contact form, posts to `app/api/contact/route.ts` (Resend).
+- `/auth` → `Auth` — **simulated** login/signup UI only (no real Supabase Auth wired up yet); "guest" and both tabs just `router.push("/biblioteca")`.
+- `app/api/contact/route.ts` — validates + sends the contact email via `lib/email.ts` (Resend), has a honeypot (`website`) field.
+- `app/api/health/route.ts` — pings Supabase storage to check the connection is alive.
+
+### Games (`components/games/`)
+
+Four games are **real**, canvas-based, and wired to the real leaderboard; the rest of the catalog is still simulated (random/interval-driven HUD, no real gameplay):
+
+| catalog `id`    | component          | source game       |
+| --------------- | ------------------ | ----------------- |
+| `asteroides`    | `Asteroids.tsx`    | Asteroids         |
+| `caida`         | `Tetris.tsx`       | Tetris            |
+| `bloque-buster` | `BloqueBuster.tsx` | Arkanoid/breakout |
+| `serpentina`    | `Snake.tsx`        | Snake             |
+
+`gloton`, `invasores`, `ranaria`, `duelo-pixel` are seeded catalog rows with real scores but **no real gameplay yet** — `/add-game` is the recipe for porting one of them (or adding a brand-new entry).
+
+Every real game shares one contract (`<Name>State`/`<Name>Props`/`<Name>Handle`, `forwardRef`, internal fixed-resolution `<canvas>` scaled via CSS to fill `.crt-screen`) and is looked up by `components/GamePlayer.tsx`'s `REAL_GAMES: Partial<Record<string, RealGameComponent>>` registry keyed by `game.id`. Adding a new real game is a new registry entry, not a new branch of logic — never special-case a game by name outside that map.
+
+### Data layer (`lib/`, `supabase/`)
+
+- Supabase clients: `lib/supabase/server.ts` (Server Components/Route Handlers) and `lib/supabase/client.ts` (Client Components). Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (see `.env.example`).
+- `lib/games.ts` — `getGames()`/`getGameById()`, joins the `games` table with the `game_stats` view (best score / play count).
+- `lib/scores.ts` (client-safe, shared) + `lib/scores.server.ts` (server-only wrapper) — `fetchScores`/`getScoresByGame(Client)`/`insertScore`, all generic by `game_id`. **No per-game code exists on the leaderboard side** — a new game only needs a matching row in `games`.
+- `lib/data.ts` — the fixed `CATS` list used for catalog filtering.
+- `lib/email.ts` — Resend wrapper for the contact form.
+- `supabase/sql/001_games_and_scores.sql` — schema: `games`, `scores`, `game_stats` view, RLS policies (public read on both tables, public insert on `scores` only — no client can touch `games` or mutate/delete scores).
+- `supabase/sql/002_seed.sql` — the seeded catalog (8 games) + example scores.
+- **SQL migrations are append-only**: never edit `001`/`002` in place once applied — add a new numbered file (`00N_add_<slug>.sql`). Convention so far is to run SQL manually in the Supabase dashboard's SQL Editor, not via CLI; a Supabase MCP server is configured in `.mcp.json` (project ref `gjxfrwhnbfstrdepfyxd`) as an authorized alternative (`mcp__supabase__authenticate`).
