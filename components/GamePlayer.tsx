@@ -5,6 +5,14 @@ import type { ForwardRefExoticComponent, RefAttributes } from "react";
 import { useRouter } from "next/navigation";
 import type { Game } from "@/lib/games";
 import { insertScore } from "@/lib/scores";
+import {
+  DEFAULT_SKIN,
+  SKIN_STORAGE_KEY,
+  hasSkins,
+  isSkinId,
+} from "@/lib/skins";
+import type { SkinId } from "@/lib/skins";
+import SkinPicker from "@/components/SkinPicker";
 import Asteroids from "@/components/games/Asteroids";
 import Tetris from "@/components/games/Tetris";
 import BloqueBuster from "@/components/games/BloqueBuster";
@@ -18,6 +26,7 @@ interface RealGameState {
 
 interface RealGameProps {
   paused: boolean;
+  skin: SkinId;
   onStateChange: (state: RealGameState) => void;
   onGameOver: (finalScore: number) => void;
 }
@@ -49,8 +58,35 @@ export default function GamePlayer({ game }: { game: Game }) {
   const [name, setName] = useState("INVITADO");
   const [saved, setSaved] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  // Arranca siempre en DEFAULT_SKIN: leer localStorage en el inicializador
+  // provocaría un mismatch de hidratación entre servidor y cliente.
+  const [skin, setSkin] = useState<SkinId>(DEFAULT_SKIN);
+  const skinHydratedRef = useRef(false);
 
   const realGameRef = useRef<RealGameHandle>(null);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(SKIN_STORAGE_KEY);
+      // Un valor desconocido o corrupto se ignora y cae a DEFAULT_SKIN.
+      if (isSkinId(stored)) setSkin(stored);
+    } catch {
+      // localStorage no disponible: se sigue con DEFAULT_SKIN
+    }
+  }, []);
+
+  useEffect(() => {
+    // El primer pase es solo hidratación: no reescribe lo que acaba de leerse.
+    if (!skinHydratedRef.current) {
+      skinHydratedRef.current = true;
+      return;
+    }
+    try {
+      window.localStorage.setItem(SKIN_STORAGE_KEY, skin);
+    } catch {
+      // localStorage no disponible: la selección solo vive en memoria
+    }
+  }, [skin]);
 
   useEffect(() => {
     if (RealGame) return;
@@ -135,6 +171,7 @@ export default function GamePlayer({ game }: { game: Game }) {
           </div>
         </div>
         <div className="hud-actions">
+          {hasSkins(game.id) && <SkinPicker value={skin} onChange={setSkin} />}
           <button className="btn yellow" onClick={() => setPaused((p) => !p)}>
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
@@ -157,6 +194,7 @@ export default function GamePlayer({ game }: { game: Game }) {
               key={resetKey}
               ref={realGameRef}
               paused={paused}
+              skin={skin}
               onStateChange={handleRealGameStateChange}
               onGameOver={handleRealGameOver}
             />

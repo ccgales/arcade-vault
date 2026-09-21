@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { SNAKE_SKINS, type SkinId } from "@/lib/skins";
 
 const W = 800;
 const H = 600;
@@ -56,6 +57,8 @@ export interface SnakeState {
 
 export interface SnakeProps {
   paused: boolean;
+  /** Paleta activa (SPEC 10). Se lee por frame: cambiarla no reinicia la partida. */
+  skin: SkinId;
   onStateChange: (state: SnakeState) => void;
   onGameOver: (finalScore: number) => void;
 }
@@ -65,11 +68,12 @@ export interface SnakeHandle {
 }
 
 function Snake(
-  { paused, onStateChange, onGameOver }: SnakeProps,
+  { paused, skin, onStateChange, onGameOver }: SnakeProps,
   ref: React.Ref<SnakeHandle>,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pausedRef = useRef(paused);
+  const skinRef = useRef(skin);
   const forceEndRef = useRef(false);
   const onStateChangeRef = useRef(onStateChange);
   const onGameOverRef = useRef(onGameOver);
@@ -77,6 +81,10 @@ function Snake(
   useEffect(() => {
     pausedRef.current = paused;
   }, [paused]);
+
+  useEffect(() => {
+    skinRef.current = skin;
+  }, [skin]);
 
   useEffect(() => {
     onStateChangeRef.current = onStateChange;
@@ -247,11 +255,15 @@ function Snake(
     }
 
     function draw() {
-      ctx.fillStyle = "#020403";
+      // La paleta se resuelve en cada frame desde el ref espejado: cambiar de
+      // skin a mitad de partida repinta, nunca remonta ni reinicia.
+      const pal = SNAKE_SKINS[skinRef.current];
+
+      ctx.fillStyle = pal.bg;
       ctx.fillRect(0, 0, W, H);
 
-      ctx.strokeStyle = "rgba(255,255,255,0.05)";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = pal.grid;
+      ctx.lineWidth = pal.gridWidth;
       for (let c = 1; c < COLS; c++) {
         ctx.beginPath();
         ctx.moveTo(c * CELL, 0);
@@ -266,7 +278,13 @@ function Snake(
       }
 
       const sprite = FRUIT_SPRITES[fruit.spriteIndex];
-      if (fruitImg.complete && fruitImg.naturalWidth > 0) {
+      ctx.shadowBlur = pal.fruitGlow;
+      ctx.shadowColor = pal.fruitGlow > 0 ? pal.fruit : "transparent";
+      if (
+        pal.fruitMode === "sprite" &&
+        fruitImg.complete &&
+        fruitImg.naturalWidth > 0
+      ) {
         ctx.drawImage(
           fruitImg,
           sprite.x,
@@ -279,7 +297,7 @@ function Snake(
           CELL,
         );
       } else {
-        ctx.fillStyle = "#ff006e";
+        ctx.fillStyle = pal.fruit;
         ctx.fillRect(
           fruit.gx * CELL + 2,
           fruit.gy * CELL + 2,
@@ -287,12 +305,21 @@ function Snake(
           CELL - 4,
         );
       }
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
 
       for (let i = segments.length - 1; i >= 0; i--) {
         const s = segments[i];
-        ctx.fillStyle = i === 0 ? "#7cffb2" : "#00ff88";
+        const isHead = i === 0;
+        ctx.fillStyle = isHead ? pal.head : pal.body;
+        // Solo la cabeza lleva halo: es el punto de atención del jugador y
+        // evita pagar una sombra por segmento cuando la serpiente es larga.
+        ctx.shadowBlur = isHead ? pal.headGlow : 0;
+        ctx.shadowColor = isHead && pal.headGlow > 0 ? pal.head : "transparent";
         ctx.fillRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2);
       }
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
     }
 
     let lastTime: number | null = null;
