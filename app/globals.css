@@ -2810,3 +2810,76 @@ a {
     transform: rotate(360deg);
   }
 }
+
+/* ===== skins de juego (SPEC 10) — selector de paleta del HUD ===== */
+.hud-actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.skin-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-right: 4px;
+  border-right: 1px solid var(--line-2);
+}
+.skin-picker-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.skin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  font-family: var(--pixel);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition:
+    box-shadow 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+  clip-path: polygon(
+    5px 0,
+    100% 0,
+    100% calc(100% - 5px),
+    calc(100% - 5px) 100%,
+    0 100%,
+    0 5px
+  );
+}
+.skin-chip:hover {
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+.skin-chip.active {
+  color: var(--ink);
+  border-color: var(--skin-accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--skin-accent) 45%, transparent);
+}
+.skin-chip:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+.skin-swatches {
+  display: inline-flex;
+  gap: 2px;
+}
+.skin-swatch {
+  width: 5px;
+  height: 5px;
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skin-chip {
+    transition: none;
+  }
+}

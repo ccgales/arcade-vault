@@ -1,6 +1,8 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { BLOQUE_BUSTER_SKINS, DEFAULT_SKIN } from "@/lib/skins";
+import type { BlockColorKey, BloqueBusterSkin, SkinId } from "@/lib/skins";
 
 const W = 800;
 const H = 600;
@@ -20,25 +22,36 @@ const PADDLE_H = 14;
 const PADDLE_Y = 560;
 const BALL_SIZE = 16;
 
-const BLOCK_COLORS: Record<string, string> = {
-  red: "#ff3b3b",
-  yellow: "#f5ff00",
-  cyan: "#00f5ff",
-  magenta: "#ff006e",
-  hotpink: "#ff4fd8",
-  green: "#00ff88",
-  gray: "#8a8a8a",
-};
-
 interface Level {
   speed: number;
-  blocks: { col: number; row: number; color: string }[];
+  blocks: { col: number; row: number; color: BlockColorKey }[];
 }
 
 const LEVELS: Level[] = (() => {
-  const rowColors1 = ["red", "yellow", "cyan", "magenta", "hotpink", "green"];
-  const rowColors2 = ["gray", "cyan", "hotpink", "yellow", "magenta", "green"];
-  const rowColors4 = ["cyan", "magenta", "green", "yellow", "hotpink", "red"];
+  const rowColors1: BlockColorKey[] = [
+    "red",
+    "yellow",
+    "cyan",
+    "magenta",
+    "hotpink",
+    "green",
+  ];
+  const rowColors2: BlockColorKey[] = [
+    "gray",
+    "cyan",
+    "hotpink",
+    "yellow",
+    "magenta",
+    "green",
+  ];
+  const rowColors4: BlockColorKey[] = [
+    "cyan",
+    "magenta",
+    "green",
+    "yellow",
+    "hotpink",
+    "red",
+  ];
 
   const l1: Level["blocks"] = [];
   for (let row = 0; row < BLOCK_ROWS; row++)
@@ -101,7 +114,7 @@ interface Block {
   y: number;
   w: number;
   h: number;
-  color: string;
+  color: BlockColorKey;
   alive: boolean;
 }
 
@@ -110,19 +123,21 @@ class Particle {
   y: number;
   vx: number;
   vy: number;
-  color: string;
+  /** La **clave** del bloque que la generó, no su hex: así la partícula ya
+   *  en vuelo sigue a la skin si el jugador la cambia a mitad de explosión. */
+  colorKey: BlockColorKey;
   life: number;
   ttl: number;
   dead: boolean;
 
-  constructor(x: number, y: number, color: string) {
+  constructor(x: number, y: number, colorKey: BlockColorKey) {
     this.x = x;
     this.y = y;
     const angle = rand(0, Math.PI * 2);
     const speed = rand(60, 220);
     this.vx = Math.cos(angle) * speed;
     this.vy = Math.sin(angle) * speed;
-    this.color = color;
+    this.colorKey = colorKey;
     this.life = rand(0.15, 0.32);
     this.ttl = this.life;
     this.dead = false;
@@ -137,9 +152,9 @@ class Particle {
     if (this.ttl <= 0) this.dead = true;
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, skin: BloqueBusterSkin) {
     const alpha = Math.max(this.ttl / this.life, 0);
-    ctx.fillStyle = this.color;
+    ctx.fillStyle = skin.blocks[this.colorKey];
     ctx.globalAlpha = alpha;
     ctx.fillRect(this.x - 2, this.y - 2, 4, 4);
     ctx.globalAlpha = 1;
@@ -168,6 +183,8 @@ export interface BloqueBusterState {
 
 export interface BloqueBusterProps {
   paused: boolean;
+  /** Paleta activa (SPEC 10). Se lee por frame: cambiarla no reinicia la partida. */
+  skin: SkinId;
   onStateChange: (state: BloqueBusterState) => void;
   onGameOver: (finalScore: number) => void;
 }
@@ -179,11 +196,12 @@ export interface BloqueBusterHandle {
 const CONTROL_KEYS = ["ArrowLeft", "ArrowRight"];
 
 function BloqueBuster(
-  { paused, onStateChange, onGameOver }: BloqueBusterProps,
+  { paused, skin, onStateChange, onGameOver }: BloqueBusterProps,
   ref: React.Ref<BloqueBusterHandle>,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pausedRef = useRef(paused);
+  const skinRef = useRef(skin);
   const forceEndRef = useRef(false);
   const onStateChangeRef = useRef(onStateChange);
   const onGameOverRef = useRef(onGameOver);
@@ -191,6 +209,12 @@ function BloqueBuster(
   useEffect(() => {
     pausedRef.current = paused;
   }, [paused]);
+
+  // Mismo idiom que `pausedRef`: espejar en un ref evita remontar el canvas
+  // (un `key={skin}` reiniciaría la partida).
+  useEffect(() => {
+    skinRef.current = skin;
+  }, [skin]);
 
   useEffect(() => {
     onStateChangeRef.current = onStateChange;
@@ -288,8 +312,8 @@ function BloqueBuster(
       initBall();
     }
 
-    function explode(x: number, y: number, color: string) {
-      for (let i = 0; i < 8; i++) particles.push(new Particle(x, y, color));
+    function explode(x: number, y: number, colorKey: BlockColorKey) {
+      for (let i = 0; i < 8; i++) particles.push(new Particle(x, y, colorKey));
     }
 
     function initGame() {
@@ -355,11 +379,7 @@ function BloqueBuster(
         if (!block.alive) continue;
         if (collideAABB(ball, block)) {
           block.alive = false;
-          explode(
-            block.x + block.w / 2,
-            block.y + block.h / 2,
-            BLOCK_COLORS[block.color],
-          );
+          explode(block.x + block.w / 2, block.y + block.h / 2, block.color);
           score += 10;
           ball.vy = -ball.vy;
           if (blocks.every((b) => !b.alive)) {
@@ -387,30 +407,42 @@ function BloqueBuster(
     }
 
     function draw() {
-      ctx.fillStyle = "#000";
+      // La paleta se resuelve por frame desde el ref espejado: cambiar de skin
+      // a mitad de partida no toca el estado del juego, solo el color.
+      const skinPalette =
+        BLOQUE_BUSTER_SKINS[skinRef.current] ??
+        BLOQUE_BUSTER_SKINS[DEFAULT_SKIN];
+
+      ctx.fillStyle = skinPalette.bg;
       ctx.fillRect(0, 0, W, H);
 
       for (const block of blocks) {
         if (!block.alive) continue;
-        const color = BLOCK_COLORS[block.color];
+        const color = skinPalette.blocks[block.color];
         ctx.fillStyle = color;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 6;
+        ctx.shadowColor = skinPalette.blockGlow > 0 ? color : "transparent";
+        ctx.shadowBlur = skinPalette.blockGlow;
         ctx.fillRect(block.x + 1, block.y + 1, block.w - 2, block.h - 2);
         ctx.shadowBlur = 0;
+        ctx.shadowColor = "transparent";
       }
 
-      particles.forEach((p) => p.draw(ctx));
+      particles.forEach((p) => p.draw(ctx, skinPalette));
 
-      ctx.fillStyle = "#fff";
-      ctx.shadowColor = "#00f5ff";
-      ctx.shadowBlur = 8;
+      ctx.fillStyle = skinPalette.paddle;
+      ctx.shadowColor =
+        skinPalette.paddleGlow > 0
+          ? skinPalette.paddleGlowColor
+          : "transparent";
+      ctx.shadowBlur = skinPalette.paddleGlow;
       ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
       ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
 
-      ctx.fillStyle = "#fff";
-      ctx.shadowColor = "#fff";
-      ctx.shadowBlur = 8;
+      ctx.fillStyle = skinPalette.ball;
+      ctx.shadowColor =
+        skinPalette.ballGlow > 0 ? skinPalette.ballGlowColor : "transparent";
+      ctx.shadowBlur = skinPalette.ballGlow;
       ctx.beginPath();
       ctx.arc(
         ball.x + ball.w / 2,
@@ -421,6 +453,7 @@ function BloqueBuster(
       );
       ctx.fill();
       ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
     }
 
     let lastTime: number | null = null;

@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import type { SkinId } from "@/lib/skins";
 
 const W = 800;
 const H = 600;
@@ -97,6 +98,8 @@ export interface TetrisState {
 
 export interface TetrisProps {
   paused: boolean;
+  /** Aceptada para que `REAL_GAMES` tipe con un único componente; aún sin usar (SPEC 10). */
+  skin: SkinId;
   onStateChange: (state: TetrisState) => void;
   onGameOver: (finalScore: number) => void;
 }
