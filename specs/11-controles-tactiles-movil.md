@@ -1,6 +1,6 @@
 # 11 · Controles táctiles y layout móvil del reproductor
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
 - **Depende de:** SPEC 05, SPEC 07, SPEC 08, SPEC 09, SPEC 10
 - **Fecha:** 2026-09-21
 - **Objetivo:** Hacer jugables los cuatro juegos reales en un teléfono táctil mediante un gamepad virtual que despacha eventos de teclado sintéticos, sin modificar ni una línea de los componentes de juego.

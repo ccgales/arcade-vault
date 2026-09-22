@@ -1035,6 +1035,13 @@ a {
   display: flex;
   gap: 10px;
 }
+/* Extraída de un `style` inline (mismos valores) para poder ajustarla por
+   media query en móvil — un `style` inline no se puede tocar desde CSS. */
+.hud-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
 
 .crt {
   position: relative;
@@ -1125,6 +1132,34 @@ a {
   border-radius: 50%;
   background: var(--green);
   box-shadow: 0 0 6px var(--green);
+}
+
+/* Recupera ancho de pantalla en un teléfono: el marco y el padding del
+   reproductor no deben competir con el área jugable por los mismos px. */
+@media (max-width: 720px) {
+  .av-player {
+    padding: 0 10px 32px;
+  }
+  .crt {
+    padding: 10px;
+    border-radius: 16px;
+  }
+  .crt-screen {
+    /* mata el zoom por doble toque sin bloquear el scroll de la página */
+    touch-action: manipulation;
+  }
+  .player-hud {
+    padding: 10px 12px;
+  }
+  .hud-stats {
+    gap: 12px;
+  }
+  .hud-stat .v {
+    font-size: 13px;
+  }
+  .crt-bottom span:last-child {
+    display: none;
+  }
 }
 
 /* fake in-screen game */
@@ -1272,6 +1307,27 @@ a {
   justify-content: center;
   margin-top: 18px;
   flex-wrap: wrap;
+}
+@media (max-width: 720px) {
+  .modal {
+    padding: 20px;
+    width: min(480px, 94vw);
+  }
+  .modal .input-row input {
+    /* Safari en iPhone hace zoom al enfocar un input por debajo de 16px y no
+       lo revierte al salir del campo. Con 16px no ocurre. */
+    font-size: 16px;
+  }
+  .modal-bd {
+    /* con el teclado virtual abierto, el modal debe poder desplazarse */
+    overflow-y: auto;
+  }
+}
+@media (max-width: 520px) {
+  .modal .input-row {
+    /* el botón GUARDAR no cabe junto al input en una pantalla tan angosta */
+    flex-direction: column;
+  }
 }
 .toast-saved {
   font-family: var(--pixel);
@@ -2880,6 +2936,125 @@ a {
 }
 @media (prefers-reduced-motion: reduce) {
   .skin-chip {
+    transition: none;
+  }
+}
+
+/* ===== controles táctiles (SPEC 11) — gamepad virtual del mueble CRT ===== */
+/* Se renderiza siempre y CSS decide si se ve: sin matchMedia en JS, para que el
+   HTML del servidor y el del cliente sean idénticos (sin mismatch de hidratación). */
+.touch-controls {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-2);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (pointer: coarse) {
+  .touch-controls {
+    display: flex;
+  }
+}
+
+/* Un solo grupo (serpentina, bloque-buster): se centra en vez de pegarse a la izquierda */
+.touch-group:only-child {
+  margin-inline: auto;
+}
+
+/* d-pad: rejilla 3×3 donde cada botón ocupa su celda. Las filas/columnas vacías
+   miden 0, y el espacio entre botones sale del margin (no de gap, que también
+   contaría las pistas vacías). */
+.touch-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(56px, 72px));
+}
+.touch-btn[data-cell="up"] {
+  grid-area: 1 / 2;
+}
+.touch-btn[data-cell="left"] {
+  grid-area: 2 / 1;
+}
+.touch-btn[data-cell="right"] {
+  grid-area: 2 / 3;
+}
+.touch-btn[data-cell="down"] {
+  grid-area: 3 / 2;
+}
+/* "wide": bloque-buster tiene solo ◀ ▶, que se reparten el ancho de la fila */
+.touch-dpad:has(.touch-btn[data-cell="wide"]) {
+  flex: 1;
+  grid-template-columns: 1fr 1fr;
+}
+.touch-btn[data-cell="wide"] {
+  min-height: 84px;
+  font-size: 16px;
+}
+
+.touch-actions {
+  display: flex;
+  flex-direction: column;
+}
+.touch-actions .touch-btn {
+  min-width: 120px;
+}
+
+.touch-btn {
+  appearance: none;
+  margin: 3px;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 0 10px;
+  font-family: var(--pixel);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--ink-dim);
+  background: rgba(0, 245, 255, 0.04);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    box-shadow 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
+}
+/* Estado por clase (la pone TouchControls al apretar), no por :active: en táctil es poco fiable.
+   Como .btn y .skin-chip, el clip-path recorta el halo exterior; el inset es el que se ve. */
+.touch-btn.is-pressed {
+  color: var(--ink);
+  border-color: var(--cyan);
+  background: rgba(0, 245, 255, 0.14);
+  box-shadow:
+    0 0 10px rgba(0, 245, 255, 0.45),
+    inset 0 0 12px rgba(0, 245, 255, 0.35);
+}
+.touch-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.touch-btn:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .touch-btn {
     transition: none;
   }
 }

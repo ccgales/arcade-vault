@@ -13,6 +13,8 @@ import {
 } from "@/lib/skins";
 import type { SkinId } from "@/lib/skins";
 import SkinPicker from "@/components/SkinPicker";
+import TouchControls from "@/components/TouchControls";
+import { hasTouchControls } from "@/lib/touch-controls";
 import Asteroids from "@/components/games/Asteroids";
 import Tetris from "@/components/games/Tetris";
 import BloqueBuster from "@/components/games/BloqueBuster";
@@ -88,6 +90,17 @@ export default function GamePlayer({ game }: { game: Game }) {
     }
   }, [skin]);
 
+  // Cambiar de app o de pestaña a mitad de partida es fácil en móvil (una
+  // llamada, cambiar de app); nunca reanuda sola, solo pausa.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.hidden && !over) setPaused(true);
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [over]);
+
   useEffect(() => {
     if (RealGame) return;
     if (over || paused) return;
@@ -150,7 +163,7 @@ export default function GamePlayer({ game }: { game: Game }) {
   return (
     <div className="av-player fade-in">
       <div className="player-hud">
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+        <div className="hud-stats">
           <div className="hud-stat">
             <div className="l">Jugador</div>
             <div className="v" style={{ color: "var(--ink)" }}>
@@ -236,6 +249,9 @@ export default function GamePlayer({ game }: { game: Game }) {
           <span>{game.title} · CRT-83 · 60 HZ</span>
           <span>CARGA · 1MB</span>
         </div>
+        {hasTouchControls(game.id) && (
+          <TouchControls gameId={game.id} disabled={paused || over} />
+        )}
       </div>
 
       {over && (
