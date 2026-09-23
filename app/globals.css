@@ -851,6 +851,49 @@ a {
   filter: drop-shadow(0 0 6px rgba(0, 245, 255, 0.4));
 }
 
+.cover-frogger {
+  background: linear-gradient(
+    180deg,
+    #001f2a 0%,
+    #001f2a 45%,
+    #0a1a0a 45%,
+    #0a1a0a 100%
+  );
+}
+.cover-frogger::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+        90deg,
+        transparent 0 24px,
+        rgba(245, 255, 0, 0.55) 24px 40px
+      )
+      0 68%/100% 6px no-repeat,
+    radial-gradient(
+      circle at 22% 22%,
+      rgba(0, 245, 255, 0.25) 0 16px,
+      transparent 17px
+    ),
+    radial-gradient(
+      circle at 68% 14%,
+      rgba(0, 245, 255, 0.2) 0 10px,
+      transparent 11px
+    );
+}
+.cover-frogger::before {
+  content: "";
+  position: absolute;
+  left: 45%;
+  top: 56%;
+  width: 26px;
+  height: 20px;
+  background: var(--green);
+  border-radius: 60% 60% 50% 50%;
+  box-shadow: 0 0 10px var(--green);
+}
+
 /* ===== detail screen ===== */
 .av-detail {
   display: grid;
@@ -966,6 +1009,14 @@ a {
 .lb-row .pl {
   color: var(--ink);
 }
+/* extraída del style inline de GameDetail.tsx con los mismos valores:
+   un style inline no se puede ajustar por media query (mismo criterio
+   que .hud-stats en SPEC 11) */
+.lb-row .lb-date {
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
+}
 .lb-row .sc {
   text-align: right;
   font-family: var(--pixel);
@@ -986,6 +1037,54 @@ a {
 .lb-row.top3 .sc {
   color: var(--bronze);
   text-shadow: 0 0 6px rgba(217, 122, 58, 0.5);
+}
+
+/* ===== detail screen · móvil (SPEC 13) =====
+   Medido en Chrome: a 360px el `1fr` de .stat-strip es minmax(auto, 1fr),
+   así que las pistas se dimensionan al contenido: con "41.200" quedan en
+   86/125/100px en vez de iguales, y con un récord de 6 cifras la franja
+   llega justo al borde del viewport (+1px). Con 7 cifras desborda 33px y
+   arrastra consigo toda la columna del grid (portada, etiquetas, acciones
+   y marcador), oculto tras el `overflow-x: hidden` del body. */
+@media (max-width: 720px) {
+  /* minmax(0, ...) permite que la pista encoja por debajo de su contenido:
+     es lo que corta el desborde de raíz */
+  .stat-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* 16px de tipografía pixel no cabe en una pista de ~80px; 14px sí.
+     Mismo ajuste que SPEC 11 aplica a .hud-stat .v por el mismo motivo. */
+  .stat-strip .v {
+    font-size: 14px;
+  }
+  .lb-row .lb-date {
+    font-size: 11px;
+  }
+}
+
+/* Bajo 520px ni tres pistas iguales bastan: "★ ★ ★ ☆ ☆" envolvía a 3 líneas
+   e inflaba la franja a 121px. La franja pasa a tres filas etiqueta/valor,
+   que reutilizan el ritmo de .lb-row justo debajo. Breakpoint ya usado por
+   el archivo (:1369, :1939, :2617) y por el .modal .input-row de SPEC 11. */
+@media (max-width: 520px) {
+  .stat-strip {
+    grid-template-columns: 1fr;
+  }
+  .stat-strip > div {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .stat-strip .v {
+    margin-top: 0;
+    text-align: right;
+  }
+  /* las dos acciones ocupaban 290px y 266px: borde derecho dentado */
+  .detail-actions .btn {
+    flex: 1 1 100%;
+  }
 }
 
 /* ===== player ===== */

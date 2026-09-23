@@ -79,15 +79,7 @@ export default function GameDetail({
               <div className="rk">#{String(r.rank).padStart(2, "0")}</div>
               <div className="pl">
                 {r.name}
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: "var(--ink-faint)",
-                    letterSpacing: "0.1em",
-                  }}
-                >
-                  {r.date}
-                </div>
+                <div className="lb-date">{r.date}</div>
               </div>
               <div className="sc">{r.score.toLocaleString("es-ES")}</div>
             </div>
