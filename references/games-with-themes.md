@@ -1,6 +1,6 @@
 # Juegos con skins
 
-_Mantenido por el agente `skin-designer`. Solo él escribe aquí. Última actualización: 2026-09-17._
+_Mantenido por el agente `skin-designer`. Solo él escribe aquí. Última actualización: 2026-09-22._
 
 Infraestructura compartida (creada en la corrida de `asteroides`, ya no hay que repetirla):
 `lib/skins.ts` (`SkinId`/`DEFAULT_SKIN`/`SKIN_LABELS`/`SKIN_ACCENTS`/`hasSkins`/`SKIN_STORAGE_KEY`),
@@ -15,9 +15,15 @@ y su bloque CSS al final de `app/globals.css`. Cada corrida siguiente solo **añ
 | `asteroides`    | `Asteroids.tsx`    | sí        | sí     | sí      | Implementado | 2026-09-17 |
 | `bloque-buster` | `BloqueBuster.tsx` | sí        | sí     | sí      | Implementado | 2026-09-17 |
 | `serpentina`    | `Snake.tsx`        | sí        | sí     | sí      | Implementado | 2026-09-17 |
+| `frogger`       | `FroggerGame.tsx`  | sí        | sí     | sí      | Implementado | 2026-09-22 |
 | `caida`         | `Tetris.tsx`       | —         | —      | —       | Pendiente    | —          |
 
 Siguiente comando sugerido: `@skin-designer caida`.
+
+`frogger` entró a `REAL_GAMES` con SPEC `game-jam/flogger/03-frogger-core` (rama
+`spec-flogger-03-frogger-core`) y ya recibió sus tres paletas. Es el quinto juego real:
+SPEC 10 se escribió cuando eran cuatro, así que "los cuatro juegos reales" de ese texto
+hay que leerlo como "todos los juegos reales del catálogo".
 
 ## Detalle
 
@@ -153,6 +159,88 @@ Casos especiales resueltos en esta corrida:
   bastó sumar `"serpentina"` a `GAMES_WITH_SKINS`.
 - El `lineWidth` de la rejilla queda en la paleta (`gridWidth`), pero vale `1` en las tres skins:
   cambiarlo movería el peso visual de la celda y la celda es la unidad de juego.
+
+### `frogger` — SPEC 10 + SPEC `game-jam/flogger/03-frogger-core`, 2026-09-22
+
+Paleta en `lib/skins.ts` → `FROGGER_SKINS` (interfaz `FroggerSkin`).
+
+| Rol                   | `clasico`                     | `neon`                        | `retro`                       |
+| --------------------- | ----------------------------- | ----------------------------- | ----------------------------- |
+| `bgRoad`              | `#000000`                     | `#05060a`                     | `#160d02`                     |
+| `bgRiver`             | `#001a3a`                     | `#062333`                     | `#060300`                     |
+| `bgSafe`              | `#0a2a12`                     | `#07180f`                     | `#2e1f07`                     |
+| rana                  | `#39ff6a` · glow 0            | `#00f5ff` · glow 12           | `#ffe7b3` · glow 2            |
+| ojo / pupila          | `#ffffff` / `#0a0a0a`         | `#ffffff` / `#05060a`         | `#fff6e0` / `#241300`         |
+| coche / rueda         | `#ff3b3b` / `#111111`         | `#ff4fd8` / `#2a1030`         | `#e69624` / `#2a1600`         |
+| camión / cabina       | `#8a8a8a` / `#555555`         | `#9aa7bd` / `#66748c`         | `#b69667` / `#8f7044`         |
+| glow de vehículo      | 0                             | 8                             | 0                             |
+| tronco / veta         | `#8b5a2b` / `#5c3a1a`         | `#ffa41b` / `#b3721a`         | `#c98018` / `#9a610f`         |
+| tortuga / caparazón   | `#1a9e4a` / `#0d5c2a`         | `#00c46a` / `#04563a`         | `#f0ab3d` / `#9a6a14`         |
+| tortuga sumergida     | `rgba(0,255,136,0.3)`         | `#0d9460`                     | `#a86a12`                     |
+| glow de río           | 0                             | 6                             | 0                             |
+| boca relleno/borde    | `#0f3d1c` / `#e8c34a`         | `#0a2233` / `#f5ff00`         | `#3d2b0b` / `#ffb84d`         |
+| boca ocupada          | `#39ff6a` · glow 0            | `#00b0c4` · glow 10           | `#eb9c28` · glow 1            |
+| HUD texto / vidas     | `#ffffff` / `#39ff6a`         | `#ffffff` / `#00f5ff`         | `#ffcf6b` / `#ffe7b3`         |
+| HUD fuente            | `16px monospace`              | `16px monospace`              | `bold 16px mono`              |
+| barra alto/medio/bajo | `#39ff6a`/`#f5ff00`/`#ff3b3b` | `#00c46a`/`#ffa41b`/`#ff6b6b` | `#e69624`/`#ffb84d`/`#ffcf6b` |
+
+Argumento de diseño:
+
+- **`clasico`** es extracción literal del `FroggerGame.tsx` recién portado: `zoneColorForRow`
+  (`:163-168` antes de esta corrida), bocas `:481-487`, vehículos `:501-512`, tronco `:514-516`,
+  tortugas `:525-531`, rana `:553-568` y HUD `:575-593`. No se rediseñó ni un hex.
+- **`neon`** repite el reparto de roles de los tres juegos anteriores: la rana es el
+  `--cyan #00f5ff` (lo que controla el jugador y lo más luminoso del cuadro, 9.97:1), el coche
+  el `#ff4fd8` que Asteroides usa para el enemigo, y el camión el acero `#9aa7bd` de Bloque
+  Buster. Lo propio de Frogger es que las **dos plataformas del río se separan por tono y no por
+  luminancia**: tronco ámbar `#ffa41b` (5.91:1) contra tortuga verde `#00c46a` (5.13:1), 1.16:1
+  de ratio pero 116° de tono. Eso deja todo el margen de luminancia libre para que la rana
+  destaque sobre cualquiera de las dos.
+- **`retro`** es el caso difícil: nueve roles en un solo fósforo ámbar. Se resuelve **invirtiendo
+  la intuición de las zonas** — el río es la banda **más oscura** (`#060300`, el agua como vacío)
+  y las filas seguras la más clara (`#2e1f07`) — para regalarle a las plataformas todo el margen
+  de luminancia disponible. Con eso la escalera cierra con tres escalones reales:
+  rana `#ffe7b3` (11.26:1) → tortuga `#f0ab3d` (7.06:1) → tronco `#c98018` (4.55:1),
+  a 1.64:1 y 1.61:1 uno del otro. Los vehículos ocupan la banda media sobre el asfalto
+  (`#e69624` 5.60:1, `#b69667` 4.89:1) y se distinguen entre sí por saturación, no por brillo.
+
+Peldaños nuevos del ladder ámbar de `retro` (para que la corrida de `caida` los reutilice en
+vez de inventar otros): `#f0ab3d` (plataforma primaria, ~7:1), `#c98018` (plataforma
+secundaria, ~4.5:1), `#eb9c28` (marcador de objetivo conquistado, ~4.6:1) y `#a86a12`
+(estado deshabilitado/peligroso, ~3.4:1). Los peldaños heredados de Asteroides
+(`#ffe7b3`, `#ffcf6b`, `#ffb84d`, `#e69624`, `#d2841b`, `#b85c00`) no se tocaron.
+
+Casos especiales resueltos en esta corrida:
+
+- **Primer juego con fondo por zona.** `FroggerSkin` lleva `bgRoad`/`bgRiver`/`bgSafe` en vez de
+  un `bg` único, porque en Frogger el color del fondo **es mecánica**: el río ahoga, la fila
+  segura no. `zoneColorForRow(row)` pasa a `zoneColorForRow(row, pal)` y sigue siendo la única
+  fuente de la banda; no se añadió geometría para dibujar las zonas.
+- **Tres niveles de medición en vez de dos.** Además de crítico (≥ 4.5:1) y decorativo (≥ 3:1)
+  contra el fondo de la zona, las **texturas internas** (veta del tronco, caparazón, cabina,
+  ruedas, ojos y pupila) se miden contra **la figura sobre la que se pintan**, con un mínimo de
+  1.5:1. Medir una veta oscura contra un fondo sobre el que nunca se dibuja no significa nada, y
+  ninguna de esas texturas porta información de juego: quitarlas todas deja el juego jugable.
+- **Coche y camión son un solo rol**, como los 7 bloques de Bloque Buster: los dos matan igual,
+  así que confundirlos no tiene coste. No se gastan escalones de luminancia en separarlos; se
+  gastan en los pares que sí cuestan una vida (rana↔plataforma y tronco↔tortuga).
+- **La tortuga sumergida nunca lleva halo**, en ninguna skin. No es una plataforma y el glow la
+  haría parecer una: su señal primaria es de forma (contorno hueco vs relleno), heredada del
+  juego, y el color solo la acompaña.
+- **El halo se apaga antes de cada detalle interno.** `shadowBlur`/`shadowColor` se fijan al
+  entrar en el cuerpo de cada entidad y vuelven a `0`/`"transparent"` antes de las ruedas, la
+  cabina, la veta, el caparazón y los ojos — si no, el `neon` embarraba el detalle con el halo
+  del cuerpo. El HUD se dibuja siempre con el halo ya apagado.
+- **Los ojos de la rana van sin halo a propósito.** Son el localizador del jugador: el par
+  ojo/pupila mantiene ~14.8:1 interno en las tres skins, que es lo que permite encontrar la rana
+  cuando está montada sobre una plataforma clara. El ojo contra el cuerpo queda en 1.1–1.4:1 en
+  las tres, y eso está bien: lo que se ve es la pupila.
+- **Ningún `lineWidth` se tocó.** El grosor del caparazón depende hoy del `lineWidth` que dejó la
+  entidad anterior; cambiarlo habría alterado el aspecto de `clasico`, que es la prueba de no
+  regresión. Las paletas solo llevan color y glow.
+- `GamePlayer.tsx` no necesitó cambios: `skin` ya llegaba a `FroggerGame` (lo aceptaba y lo
+  ignoraba) y el `SkinPicker` tras `hasSkins()` ya existía; bastó sumar `"frogger"` a
+  `GAMES_WITH_SKINS`.
 
 ## Mediciones de contraste
 
@@ -337,3 +425,150 @@ Regla: no puede darse a la vez ratio < 1.6:1 **y** < 40° de tono.
 | `retro`   | cabeza/fruta   | 1.91:1 | 6°     | ≥ 1.6:1                                                                             |
 | `retro`   | fruta/rejilla  | 1.80:1 | 5°     | ≥ 1.6:1                                                                             |
 | `retro`   | cuerpo/rejilla | 2.88:1 | 11°    | ≥ 1.6:1                                                                             |
+
+### Mediciones de `frogger`
+
+Frogger tiene **tres fondos**, así que cada elemento se mide contra el fondo de **su zona**
+(carretera, río o fila segura) dentro de su propia skin, no contra un fondo único. Hay además un
+tercer nivel: las texturas internas, medidas contra la figura que las lleva (ver más abajo).
+
+| Juego     | Skin      | Elemento           | Color     | Fondo (zona)    | Centro  | Borde  | Retención | Umbral     | OK                 |
+| --------- | --------- | ------------------ | --------- | --------------- | ------- | ------ | --------- | ---------- | ------------------ |
+| `frogger` | `clasico` | rana / carretera   | `#39ff6a` | `#000000` road  | 10.39:1 | 2.00:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | rana / río         | `#39ff6a` | `#001a3a` river | 9.02:1  | 1.92:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | rana / fila segura | `#39ff6a` | `#0a2a12` safe  | 8.30:1  | 1.89:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | HUD texto          | `#ffffff` | `#0a2a12` safe  | 11.00:1 | 2.21:1 | 1.00      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | barra tiempo medio | `#f5ff00` | `#0a2a12` safe  | 10.08:1 | 2.10:1 | 0.95      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | HUD vidas          | `#39ff6a` | `#0a2a12` safe  | 8.30:1  | 1.89:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | barra tiempo alto  | `#39ff6a` | `#0a2a12` safe  | 8.30:1  | 1.89:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | boca ocupada       | `#39ff6a` | `#0f3d1c` boca  | 6.99:1  | 1.83:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | boca borde         | `#e8c34a` | `#0f3d1c` boca  | 5.58:1  | 1.66:1 | 0.77      | 4.5 / 0.60 | sí                 |
+| `frogger` | `clasico` | camión             | `#8a8a8a` | `#000000` road  | 4.31:1  | 1.42:1 | 0.61      | 4.5 / 0.60 | **no** (excepción) |
+| `frogger` | `clasico` | coche              | `#ff3b3b` | `#000000` road  | 4.19:1  | 1.37:1 | 0.59      | 4.5 / 0.60 | **no** (excepción) |
+| `frogger` | `clasico` | tortuga visible    | `#1a9e4a` | `#001a3a` river | 3.71:1  | 1.35:1 | 0.60      | 4.5 / 0.60 | **no** (excepción) |
+| `frogger` | `clasico` | barra tiempo bajo  | `#ff3b3b` | `#0a2a12` safe  | 3.35:1  | 1.30:1 | 0.59      | 4.5 / 0.60 | **no** (excepción) |
+| `frogger` | `clasico` | tronco             | `#8b5a2b` | `#001a3a` river | 2.36:1  | 1.19:1 | 0.53      | 4.5 / 0.60 | **no** (excepción) |
+| `frogger` | `clasico` | tortuga sumergida  | `#005f51` | `#001a3a` river | 1.88:1  | 1.13:1 | 0.50      | 3.0 / 0.50 | **no** (excepción) |
+| `frogger` | `clasico` | boca relleno       | `#0f3d1c` | `#0a2a12` safe  | 1.19:1  | 1.03:1 | 0.47      | 3.0 / 0.50 | **no** (excepción) |
+| `frogger` | `neon`    | HUD texto          | `#ffffff` | `#07180f` safe  | 12.39:1 | 2.26:1 | 1.00      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | boca borde         | `#f5ff00` | `#0a2233` boca  | 10.43:1 | 2.11:1 | 0.95      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | rana / carretera   | `#00f5ff` | `#05060a` road  | 9.97:1  | 1.96:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | rana / fila segura | `#00f5ff` | `#07180f` safe  | 9.24:1  | 1.91:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | HUD vidas          | `#00f5ff` | `#07180f` safe  | 9.24:1  | 1.91:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | rana / río         | `#00f5ff` | `#062333` river | 8.47:1  | 1.88:1 | 0.85      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | barra tiempo medio | `#ffa41b` | `#07180f` safe  | 6.45:1  | 1.64:1 | 0.72      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | tronco             | `#ffa41b` | `#062333` river | 5.91:1  | 1.61:1 | 0.72      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | camión             | `#9aa7bd` | `#05060a` road  | 5.77:1  | 1.57:1 | 0.68      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | barra tiempo alto  | `#00c46a` | `#07180f` safe  | 5.60:1  | 1.54:1 | 0.68      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | tortuga visible    | `#00c46a` | `#062333` river | 5.13:1  | 1.51:1 | 0.68      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | coche              | `#ff4fd8` | `#05060a` road  | 4.95:1  | 1.46:1 | 0.63      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | barra tiempo bajo  | `#ff6b6b` | `#07180f` safe  | 4.72:1  | 1.45:1 | 0.64      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | boca ocupada       | `#00b0c4` | `#0a2233` boca  | 4.57:1  | 1.45:1 | 0.65      | 4.5 / 0.60 | sí                 |
+| `frogger` | `neon`    | tortuga sumergida  | `#0d9460` | `#062333` river | 3.20:1  | 1.29:1 | 0.58      | 3.0 / 0.50 | sí                 |
+| `frogger` | `neon`    | boca relleno       | `#0a2233` | `#07180f` safe  | 1.09:1  | 1.02:1 | 0.45      | 3.0 / 0.50 | **no** (excepción) |
+| `frogger` | `retro`   | rana / río         | `#ffe7b3` | `#060300` river | 11.26:1 | 2.11:1 | 0.91      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | rana / carretera   | `#ffe7b3` | `#160d02` road  | 10.67:1 | 2.07:1 | 0.91      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | rana / fila segura | `#ffe7b3` | `#2e1f07` safe  | 9.33:1  | 2.01:1 | 0.91      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | HUD vidas          | `#ffe7b3` | `#2e1f07` safe  | 9.33:1  | 2.01:1 | 0.91      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | HUD texto          | `#ffcf6b` | `#2e1f07` safe  | 7.81:1  | 1.83:1 | 0.83      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | barra tiempo bajo  | `#ffcf6b` | `#2e1f07` safe  | 7.81:1  | 1.83:1 | 0.83      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | tortuga visible    | `#f0ab3d` | `#060300` river | 7.06:1  | 1.69:1 | 0.73      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | barra tiempo medio | `#ffb84d` | `#2e1f07` safe  | 6.69:1  | 1.71:1 | 0.77      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | boca borde         | `#ffb84d` | `#3d2b0b` boca  | 5.93:1  | 1.67:1 | 0.77      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | coche              | `#e69624` | `#160d02` road  | 5.60:1  | 1.54:1 | 0.68      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | barra tiempo alto  | `#e69624` | `#2e1f07` safe  | 4.90:1  | 1.50:1 | 0.68      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | camión             | `#b69667` | `#160d02` road  | 4.89:1  | 1.48:1 | 0.65      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | boca ocupada       | `#eb9c28` | `#3d2b0b` boca  | 4.60:1  | 1.50:1 | 0.69      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | tronco             | `#c98018` | `#060300` river | 4.55:1  | 1.43:1 | 0.62      | 4.5 / 0.60 | sí                 |
+| `frogger` | `retro`   | tortuga sumergida  | `#a86a12` | `#060300` river | 3.39:1  | 1.31:1 | 0.56      | 3.0 / 0.50 | sí                 |
+| `frogger` | `retro`   | boca relleno       | `#3d2b0b` | `#2e1f07` safe  | 1.13:1  | 1.02:1 | 0.46      | 3.0 / 0.50 | **no** (excepción) |
+
+**Excepciones documentadas de `clasico` en `frogger`:** seis valores quedan bajo umbral (coche
+4.19, camión 4.31, tortuga 3.71, barra baja 3.35, tronco 2.36, sumergida 1.88). Mismo criterio
+que en `bloque-buster` y `serpentina`: `clasico` es extracción literal y prueba de no regresión,
+y subirlos rompería el criterio de aceptación de SPEC 10. `neon` y `retro` son la ruta accesible
+— en ambas, todo lo crítico pasa 4.5:1 y la tortuga sumergida pasa el 3:1 decorativo.
+
+**Excepción común a las tres skins — el relleno de la boca** (1.09–1.19:1 contra la fila segura).
+Es deliberado: la boca se identifica por su **borde** (5.58–10.43:1 en las tres) y por el
+marcador de ocupada; el relleno es solo la sombra del hueco. Subirlo a 3:1 convertiría la fila de
+metas en cinco bloques luminosos compitiendo con la rana.
+
+### Texturas internas de `frogger` (tercer nivel: ≥ 1.5:1 contra la figura que las lleva)
+
+No portan información de juego — quitarlas todas deja el juego igualmente jugable — y se pintan
+siempre encima de una entidad, nunca sobre el fondo, así que medirlas contra el fondo no
+significaría nada.
+
+| Textura      | Sobre   | `clasico` | `neon`  | `retro` | Umbral | OK                 |
+| ------------ | ------- | --------- | ------- | ------- | ------ | ------------------ |
+| rueda        | coche   | 5.34:1    | 6.06:1  | 7.21:1  | 1.5:1  | sí                 |
+| caparazón    | tortuga | 2.34:1    | 3.80:1  | 2.38:1  | 1.5:1  | sí                 |
+| cabina       | camión  | 2.16:1    | 1.94:1  | 1.65:1  | 1.5:1  | sí                 |
+| veta         | tronco  | 1.73:1    | 1.98:1  | 1.61:1  | 1.5:1  | sí                 |
+| pupila       | rana    | 14.79:1   | 14.95:1 | 14.84:1 | 1.5:1  | sí                 |
+| ojo (anillo) | rana    | 1.34:1    | 1.35:1  | 1.13:1  | 1.5:1  | **no** (excepción) |
+
+**Excepción del ojo, común a las tres skins:** el anillo claro del ojo no llega a 1.5:1 contra el
+cuerpo de la rana en ninguna, y no se corrige. El ojo se lee por su **pupila** (≈14.8:1 en las
+tres), que es el punto oscuro que localiza a la rana cuando está montada sobre una plataforma
+clara. Subir el anillo obligaría a bajar el cuerpo de la rana, que es el elemento que la regla de
+"lo que controla el jugador es lo más luminoso" manda dejar arriba del todo.
+
+### Correcciones que obligó la medición — `frogger`
+
+| Skin    | Rol                | Color descartado             | Ratio  | Color final | Ratio final | Motivo                                                                            |
+| ------- | ------------------ | ---------------------------- | ------ | ----------- | ----------- | --------------------------------------------------------------------------------- |
+| `neon`  | tortuga sumergida  | `rgba(0,196,106,0.35)`       | 1.69:1 | `#0d9460`   | 3.20:1      | Compuesta sobre el río no llegaba al 3:1 decorativo; pasa a color sólido          |
+| `neon`  | barra tiempo bajo  | `#ff5c5c`                    | 4.35:1 | `#ff6b6b`   | 4.72:1      | El rojo de Bloque Buster `neon` no llega a 4.5:1 sobre la fila segura             |
+| `neon`  | cabina del camión  | `#5f6d84`                    | 1.35:1 | `#66748c`   | 1.94:1      | No llegaba a 1.5:1 contra el cuerpo del camión                                    |
+| `neon`  | `bgRiver`          | `#05283b`                    | —      | `#062333`   | —           | Con el río más claro la tortuga caía a 4.92:1 y la sumergida a 3.07:1, sin margen |
+| `retro` | tortuga visible    | `#ffb84d` (peldaño de bonus) | 8.07:1 | `#f0ab3d`   | 7.06:1      | 1.42:1 contra la rana: la rana desaparecía al montarse encima                     |
+| `retro` | tronco             | `#c47c16`                    | 4.31:1 | `#c98018`   | 4.55:1      | No llegaba a 4.5:1 sobre el río                                                   |
+| `retro` | tronco + tortuga   | `#d2841b` + `#e69624`        | 1.24:1 | ver arriba  | 1.61:1      | Los dos peldaños heredados de Asteroides quedaban a 1.24:1 entre sí               |
+| `retro` | boca ocupada       | `#ffcf6b`                    | 6.93:1 | `#eb9c28`   | 4.60:1      | 1.20:1 contra la rana: una meta conquistada se leía como la rana viva             |
+| `retro` | `bgRiver`/`bgRoad` | río claro / asfalto negro    | —      | invertidos  | —           | Con el río claro no cabían tres escalones entre rana, tortuga y tronco            |
+
+### Separación entre roles (ratio mutua) — `frogger`
+
+Regla: no puede darse a la vez ratio < 1.6:1 **y** < 40° de tono. Coche y camión son **un solo
+rol** (los dos matan igual), así que la regla no se les aplica entre sí.
+
+| Skin      | Par                       | Ratio  | Δ tono | Veredicto                                                                  |
+| --------- | ------------------------- | ------ | ------ | -------------------------------------------------------------------------- |
+| `clasico` | rana / tronco             | 4.36:1 | 105°   | ≥ 1.6:1                                                                    |
+| `clasico` | rana / coche              | 2.64:1 | 135°   | ≥ 1.6:1                                                                    |
+| `clasico` | rana / tortuga            | 2.60:1 | 7°     | ≥ 1.6:1                                                                    |
+| `clasico` | tronco / tortuga          | 1.68:1 | 112°   | ≥ 1.6:1                                                                    |
+| `clasico` | rana / boca ocupada       | 1.00:1 | 0°     | Excepción aceptada: son el mismo hex en el juego original                  |
+| `neon`    | rana / camión             | 1.80:1 | 35°    | ≥ 1.6:1                                                                    |
+| `neon`    | rana / tortuga            | 1.70:1 | 30°    | ≥ 1.6:1                                                                    |
+| `neon`    | tortuga visible/sumergida | 1.68:1 | 4°     | ≥ 1.6:1 (además la sumergida es contorno, no relleno)                      |
+| `neon`    | rana / boca ocupada       | 1.94:1 | 4°     | ≥ 1.6:1                                                                    |
+| `neon`    | rana / tronco             | 1.47:1 | 146°   | Ratio baja, pero el tono los separa sin ambigüedad                         |
+| `neon`    | tronco / tortuga          | 1.16:1 | 116°   | Ídem: en `neon` las dos plataformas se separan por tono, no por luminancia |
+| `retro`   | rana / tronco             | 2.63:1 | 6°     | ≥ 1.6:1                                                                    |
+| `retro`   | rana / camión             | 2.30:1 | 5°     | ≥ 1.6:1                                                                    |
+| `retro`   | tortuga visible/sumergida | 2.24:1 | 2°     | ≥ 1.6:1                                                                    |
+| `retro`   | rana / coche              | 1.98:1 | 6°     | ≥ 1.6:1                                                                    |
+| `retro`   | rana / boca ocupada       | 1.86:1 | 5°     | ≥ 1.6:1                                                                    |
+| `retro`   | rana / tortuga            | 1.64:1 | 4°     | El par que fija el techo de las plataformas                                |
+| `retro`   | tronco / tortuga          | 1.61:1 | 2°     | El par que fija el suelo; justo en el umbral                               |
+| `retro`   | coche / camión            | 1.16:1 | 0°     | Mismo rol; separados por saturación (84% vs 44%), no por brillo            |
+
+### Separación entre zonas de `frogger` (el fondo es mecánica, no decoración)
+
+En Frogger el fondo dice si te ahogas: río, carretera y filas seguras tienen que distinguirse.
+Las bandas son franjas de ancho completo con borde duro, así que no se les aplica la regla de
+pares de objetos; se registra su ratio para dejar constancia. Las parejas **adyacentes** en
+pantalla son río↔segura y carretera↔segura (la fila segura del medio separa siempre río de
+carretera).
+
+| Skin      | río / segura | carretera / segura | río / carretera | Nota                                                             |
+| --------- | ------------ | ------------------ | --------------- | ---------------------------------------------------------------- |
+| `clasico` | 1.12:1       | 1.35:1             | 1.21:1          | Separadas por tono (azul / verde / negro)                        |
+| `neon`    | 1.13:1       | 1.11:1             | 1.25:1          | Ídem, con 53°–80° de tono entre bandas adyacentes                |
+| `retro`   | 1.29:1       | 1.20:1             | 1.07:1          | Monocromo: es la única skin donde la banda se lee por luminancia |
+
+`retro` es, por eso, la skin con **mayor** separación de luminancia entre zonas adyacentes de las
+tres: sin tono disponible, el brillo tiene que hacer todo el trabajo.

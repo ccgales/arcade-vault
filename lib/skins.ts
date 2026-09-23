@@ -273,6 +273,151 @@ export const SNAKE_SKINS: Record<SkinId, SnakeSkin> = {
   },
 };
 
+export interface FroggerSkin {
+  /** Frogger pinta el fondo **por zona de fila**, no un fondo único. */
+  bgRoad: string;
+  bgRiver: string;
+  bgSafe: string;
+
+  goalFill: string;
+  goalBorder: string;
+  /** Marcador de meta ya conquistada: familia de la rana, pero un escalón por debajo. */
+  goalFilled: string;
+  goalGlow: number;
+
+  car: string;
+  carWheel: string;
+  truckBody: string;
+  truckCab: string;
+  vehicleGlow: number;
+
+  log: string;
+  logGrain: string;
+  turtle: string;
+  turtleShell: string;
+  /** Tortuga sumergida: se dibuja como contorno, nunca como relleno. */
+  turtleSubmerged: string;
+  riverGlow: number;
+
+  frog: string;
+  frogEye: string;
+  frogPupil: string;
+  frogGlow: number;
+
+  hudText: string;
+  hudFont: string;
+  hudLives: string;
+  /** Barra de tiempo: tres tramos, > 0.5 / > 0.2 / resto. */
+  timeHigh: string;
+  timeMid: string;
+  timeLow: string;
+}
+
+export const FROGGER_SKINS: Record<SkinId, FroggerSkin> = {
+  // Extracción literal del Frogger recién portado: prueba de no regresión.
+  // Varios valores quedan bajo umbral (coche 4.19, camión 4.31, tronco 2.36,
+  // tortuga 3.71, barra baja 3.35): son los del juego tal como estaba — ver SPEC 10.
+  clasico: {
+    bgRoad: "#000000",
+    bgRiver: "#001a3a",
+    bgSafe: "#0a2a12",
+    goalFill: "#0f3d1c",
+    goalBorder: "#e8c34a",
+    goalFilled: "#39ff6a",
+    goalGlow: 0,
+    car: "#ff3b3b",
+    carWheel: "#111111",
+    truckBody: "#8a8a8a",
+    truckCab: "#555555",
+    vehicleGlow: 0,
+    log: "#8b5a2b",
+    logGrain: "#5c3a1a",
+    turtle: "#1a9e4a",
+    turtleShell: "#0d5c2a",
+    turtleSubmerged: "rgba(0,255,136,0.3)",
+    riverGlow: 0,
+    frog: "#39ff6a",
+    frogEye: "#ffffff",
+    frogPupil: "#0a0a0a",
+    frogGlow: 0,
+    hudText: "#ffffff",
+    hudFont: "16px monospace",
+    hudLives: "#39ff6a",
+    timeHigh: "#39ff6a",
+    timeMid: "#f5ff00",
+    timeLow: "#ff3b3b",
+  },
+  // Mismo reparto de roles que los tres juegos anteriores: la rana es el
+  // `--cyan #00f5ff` (lo que controla el jugador, y lo más luminoso del cuadro),
+  // el coche el `#ff4fd8` que Asteroides usa para el enemigo, y el camión el
+  // acero `#9aa7bd` de Bloque Buster. Las plataformas del río se separan por
+  // tono, no por luminancia: tronco ámbar `#ffa41b` vs tortuga verde `#00c46a`.
+  neon: {
+    bgRoad: "#05060a",
+    bgRiver: "#062333",
+    bgSafe: "#07180f",
+    goalFill: "#0a2233",
+    goalBorder: "#f5ff00",
+    goalFilled: "#00b0c4",
+    goalGlow: 10,
+    car: "#ff4fd8",
+    carWheel: "#2a1030",
+    truckBody: "#9aa7bd",
+    truckCab: "#66748c",
+    vehicleGlow: 8,
+    log: "#ffa41b",
+    logGrain: "#b3721a",
+    turtle: "#00c46a",
+    turtleShell: "#04563a",
+    turtleSubmerged: "#0d9460",
+    riverGlow: 6,
+    frog: "#00f5ff",
+    frogEye: "#ffffff",
+    frogPupil: "#05060a",
+    frogGlow: 12,
+    hudText: "#ffffff",
+    hudFont: "16px monospace",
+    hudLives: "#00f5ff",
+    timeHigh: "#00c46a",
+    timeMid: "#ffa41b",
+    timeLow: "#ff6b6b",
+  },
+  // Fósforo ámbar monocromo. Aquí el río es la zona **más oscura** (agua = vacío)
+  // y las zonas seguras las más claras: así las plataformas conservan todo el
+  // margen de luminancia, que es lo que permite separar tronco (#c98018) de
+  // tortuga (#f0ab3d) y ambos de la rana (#ffe7b3) por escalones ≥ 1.6:1.
+  retro: {
+    bgRoad: "#160d02",
+    bgRiver: "#060300",
+    bgSafe: "#2e1f07",
+    goalFill: "#3d2b0b",
+    goalBorder: "#ffb84d",
+    goalFilled: "#eb9c28",
+    goalGlow: 1,
+    car: "#e69624",
+    carWheel: "#2a1600",
+    truckBody: "#b69667",
+    truckCab: "#8f7044",
+    vehicleGlow: 0,
+    log: "#c98018",
+    logGrain: "#9a610f",
+    turtle: "#f0ab3d",
+    turtleShell: "#9a6a14",
+    turtleSubmerged: "#a86a12",
+    riverGlow: 0,
+    frog: "#ffe7b3",
+    frogEye: "#fff6e0",
+    frogPupil: "#241300",
+    frogGlow: 2,
+    hudText: "#ffcf6b",
+    hudFont: "bold 16px monospace",
+    hudLives: "#ffe7b3",
+    timeHigh: "#e69624",
+    timeMid: "#ffb84d",
+    timeLow: "#ffcf6b",
+  },
+};
+
 /** Clave versionada de `localStorage`; global a la plataforma, no por juego. */
 export const SKIN_STORAGE_KEY = "av:skin:v1";
 
@@ -283,6 +428,7 @@ const GAMES_WITH_SKINS = new Set<string>([
   "asteroides",
   "bloque-buster",
   "serpentina",
+  "frogger",
 ]);
 
 export const hasSkins = (gameId: string) => GAMES_WITH_SKINS.has(gameId);
