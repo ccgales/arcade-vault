@@ -503,70 +503,106 @@ function FroggerGame(
         ctx.shadowColor = "transparent";
       }
 
+      // Entidades agrupadas por tipo: el halo (shadowBlur/shadowColor) y el
+      // fillStyle se fijan una sola vez por grupo en vez de alternar on/off
+      // por cada entidad individual — todas las entidades del mismo tipo
+      // comparten exactamente el mismo halo dentro de una skin dada.
+      const flatEntities: { entity: Entity; row: number }[] = [];
       for (const lane of lanes) {
         for (const entity of lane.entities) {
-          const x = entity.col * CELL;
-          const y = lane.row * CELL;
-          const w = entity.width * CELL;
+          flatEntities.push({ entity, row: lane.row });
+        }
+      }
 
-          // El halo solo envuelve el cuerpo de la entidad: los detalles internos
-          // (ruedas, cabina, veta, caparazón) lo apagan para no heredarlo.
-          if (entity.type === "car") {
-            ctx.shadowBlur = pal.vehicleGlow;
-            ctx.shadowColor = pal.vehicleGlow > 0 ? pal.car : "transparent";
-            ctx.fillStyle = pal.car;
-            ctx.fillRect(x + 2, y + 8, w - 4, CELL - 16);
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = "transparent";
-            ctx.fillStyle = pal.carWheel;
+      ctx.shadowBlur = pal.vehicleGlow;
+      ctx.shadowColor = pal.vehicleGlow > 0 ? pal.car : "transparent";
+      ctx.fillStyle = pal.car;
+      for (const { entity, row } of flatEntities) {
+        if (entity.type !== "car") continue;
+        ctx.fillRect(
+          entity.col * CELL + 2,
+          row * CELL + 8,
+          entity.width * CELL - 4,
+          CELL - 16,
+        );
+      }
+
+      ctx.shadowColor = pal.vehicleGlow > 0 ? pal.truckBody : "transparent";
+      ctx.fillStyle = pal.truckBody;
+      for (const { entity, row } of flatEntities) {
+        if (entity.type !== "truck") continue;
+        ctx.fillRect(
+          entity.col * CELL + 2,
+          row * CELL + 6,
+          entity.width * CELL - 4,
+          CELL - 12,
+        );
+      }
+
+      ctx.shadowBlur = pal.riverGlow;
+      ctx.shadowColor = pal.riverGlow > 0 ? pal.log : "transparent";
+      ctx.fillStyle = pal.log;
+      for (const { entity, row } of flatEntities) {
+        if (entity.type !== "log") continue;
+        ctx.fillRect(
+          entity.col * CELL,
+          row * CELL + 8,
+          entity.width * CELL,
+          CELL - 16,
+        );
+      }
+
+      ctx.shadowColor = pal.riverGlow > 0 ? pal.turtle : "transparent";
+      ctx.fillStyle = pal.turtle;
+      for (const { entity, row } of flatEntities) {
+        if (entity.type !== "turtle" || entity.submerged) continue;
+        ctx.fillRect(
+          entity.col * CELL + 3,
+          row * CELL + 8,
+          entity.width * CELL - 6,
+          CELL - 16,
+        );
+      }
+
+      // Detalles sin halo (ruedas, cabina, veta, caparazón, contorno de
+      // tortuga sumergida): una única transición de halo para todo el frame.
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+      for (const { entity, row } of flatEntities) {
+        const x = entity.col * CELL;
+        const y = row * CELL;
+        const w = entity.width * CELL;
+
+        if (entity.type === "car") {
+          ctx.fillStyle = pal.carWheel;
+          ctx.beginPath();
+          ctx.arc(x + 8, y + CELL - 8, 4, 0, Math.PI * 2);
+          ctx.arc(x + w - 8, y + CELL - 8, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (entity.type === "truck") {
+          ctx.fillStyle = pal.truckCab;
+          ctx.fillRect(x + 2, y + 6, CELL * 0.6, CELL - 12);
+        } else if (entity.type === "log") {
+          ctx.strokeStyle = pal.logGrain;
+          ctx.lineWidth = 1;
+          for (let lx = x + 6; lx < x + w; lx += 10) {
             ctx.beginPath();
-            ctx.arc(x + 8, y + CELL - 8, 4, 0, Math.PI * 2);
-            ctx.arc(x + w - 8, y + CELL - 8, 4, 0, Math.PI * 2);
-            ctx.fill();
-          } else if (entity.type === "truck") {
-            ctx.shadowBlur = pal.vehicleGlow;
-            ctx.shadowColor =
-              pal.vehicleGlow > 0 ? pal.truckBody : "transparent";
-            ctx.fillStyle = pal.truckBody;
-            ctx.fillRect(x + 2, y + 6, w - 4, CELL - 12);
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = "transparent";
-            ctx.fillStyle = pal.truckCab;
-            ctx.fillRect(x + 2, y + 6, CELL * 0.6, CELL - 12);
-          } else if (entity.type === "log") {
-            ctx.shadowBlur = pal.riverGlow;
-            ctx.shadowColor = pal.riverGlow > 0 ? pal.log : "transparent";
-            ctx.fillStyle = pal.log;
-            ctx.fillRect(x, y + 8, w, CELL - 16);
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = "transparent";
-            ctx.strokeStyle = pal.logGrain;
-            ctx.lineWidth = 1;
-            for (let lx = x + 6; lx < x + w; lx += 10) {
-              ctx.beginPath();
-              ctx.moveTo(lx, y + 8);
-              ctx.lineTo(lx, y + CELL - 8);
-              ctx.stroke();
-            }
-          } else if (entity.submerged) {
-            // Sin halo a propósito: la tortuga sumergida no es una plataforma y
-            // no debe invitar a saltar sobre ella.
-            ctx.strokeStyle = pal.turtleSubmerged;
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(x + 3, y + 8, w - 6, CELL - 16);
-          } else {
-            ctx.shadowBlur = pal.riverGlow;
-            ctx.shadowColor = pal.riverGlow > 0 ? pal.turtle : "transparent";
-            ctx.fillStyle = pal.turtle;
-            ctx.fillRect(x + 3, y + 8, w - 6, CELL - 16);
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = "transparent";
-            ctx.strokeStyle = pal.turtleShell;
-            for (let lx = x + 8; lx < x + w; lx += 12) {
-              ctx.beginPath();
-              ctx.arc(lx, y + CELL / 2, 3, 0, Math.PI * 2);
-              ctx.stroke();
-            }
+            ctx.moveTo(lx, y + 8);
+            ctx.lineTo(lx, y + CELL - 8);
+            ctx.stroke();
+          }
+        } else if (entity.submerged) {
+          // Sin halo a propósito: la tortuga sumergida no es una plataforma y
+          // no debe invitar a saltar sobre ella.
+          ctx.strokeStyle = pal.turtleSubmerged;
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x + 3, y + 8, w - 6, CELL - 16);
+        } else {
+          ctx.strokeStyle = pal.turtleShell;
+          for (let lx = x + 8; lx < x + w; lx += 12) {
+            ctx.beginPath();
+            ctx.arc(lx, y + CELL / 2, 3, 0, Math.PI * 2);
+            ctx.stroke();
           }
         }
       }
