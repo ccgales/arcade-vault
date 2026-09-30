@@ -1,6 +1,6 @@
 # SPEC 19 — Autenticación real con Supabase Auth
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 04 (`04-supabase-base.md`)
 > **Fecha:** 2026-09-29
 > **Objetivo:** Reemplazar el login/registro simulado de `Auth.tsx` por autenticación real con Supabase Auth (correo/contraseña con confirmación por email, más Google y GitHub OAuth), reflejando el estado de sesión en `Nav.tsx` sin exigir sesión para jugar como invitado.
