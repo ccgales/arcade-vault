@@ -31,6 +31,7 @@ const COLORS: Array<string | null> = [
   "#ffb74d", // L - orange
   "#9e9e9e", // N - tuerca
 ];
+const BLOCK_HIGHLIGHT = "rgba(255,255,255,0.12)";
 
 const PIECES: number[][][] = [
   [],
@@ -259,65 +260,78 @@ function Tetris(
       }
     }
 
-    function drawBlock(
-      px: number,
-      py: number,
-      colorIndex: number,
+    // Dibuja una matriz de celdas en dos pasadas (SPEC 16): cuerpos, reasignando
+    // `fillStyle` solo al cambiar de color, y luego brillos con un único `fillStyle`.
+    // Las celdas de una matriz no se solapan, así que el resultado es el mismo que
+    // pintar cuerpo+brillo celda por celda.
+    function drawCells(
+      cells: number[][],
+      originX: number,
+      originY: number,
       size: number,
-      alpha = 1,
     ) {
-      if (!colorIndex) return;
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = COLORS[colorIndex] as string;
-      ctx.fillRect(px + 1, py + 1, size - 2, size - 2);
-      ctx.fillStyle = "rgba(255,255,255,0.12)";
-      ctx.fillRect(px + 1, py + 1, size - 2, 4);
-      ctx.globalAlpha = 1;
+      let lastColor = 0;
+      for (let r = 0; r < cells.length; r++) {
+        const row = cells[r];
+        for (let c = 0; c < row.length; c++) {
+          const v = row[c];
+          if (!v) continue;
+          if (v !== lastColor) {
+            ctx.fillStyle = COLORS[v] as string;
+            lastColor = v;
+          }
+          ctx.fillRect(
+            originX + c * size + 1,
+            originY + r * size + 1,
+            size - 2,
+            size - 2,
+          );
+        }
+      }
+      if (!lastColor) return;
+      ctx.fillStyle = BLOCK_HIGHLIGHT;
+      for (let r = 0; r < cells.length; r++) {
+        const row = cells[r];
+        for (let c = 0; c < row.length; c++)
+          if (row[c])
+            ctx.fillRect(
+              originX + c * size + 1,
+              originY + r * size + 1,
+              size - 2,
+              4,
+            );
+      }
     }
 
     function drawBoardPanel() {
       ctx.save();
       ctx.translate(BOARD_X, BOARD_Y);
 
+      // Un path por dirección: las líneas de un mismo path no se tocan, así que
+      // la cobertura es la misma que con un stroke por línea (SPEC 16).
       ctx.strokeStyle = "rgba(255,255,255,0.08)";
       ctx.lineWidth = 0.5;
+      ctx.beginPath();
       for (let c = 1; c < COLS; c++) {
-        ctx.beginPath();
         ctx.moveTo(c * BLOCK, 0);
         ctx.lineTo(c * BLOCK, ROWS * BLOCK);
-        ctx.stroke();
       }
+      ctx.stroke();
+      ctx.beginPath();
       for (let r = 1; r < ROWS; r++) {
-        ctx.beginPath();
         ctx.moveTo(0, r * BLOCK);
         ctx.lineTo(COLS * BLOCK, r * BLOCK);
-        ctx.stroke();
       }
+      ctx.stroke();
 
-      for (let r = 0; r < ROWS; r++)
-        for (let c = 0; c < COLS; c++)
-          drawBlock(c * BLOCK, r * BLOCK, board[r][c], BLOCK);
+      drawCells(board, 0, 0, BLOCK);
 
       const gy = ghostY();
-      for (let r = 0; r < current.shape.length; r++)
-        for (let c = 0; c < current.shape[r].length; c++)
-          if (current.shape[r][c])
-            drawBlock(
-              (current.x + c) * BLOCK,
-              (gy + r) * BLOCK,
-              current.shape[r][c],
-              BLOCK,
-              0.2,
-            );
+      ctx.globalAlpha = 0.2;
+      drawCells(current.shape, current.x * BLOCK, gy * BLOCK, BLOCK);
+      ctx.globalAlpha = 1;
 
-      for (let r = 0; r < current.shape.length; r++)
-        for (let c = 0; c < current.shape[r].length; c++)
-          drawBlock(
-            (current.x + c) * BLOCK,
-            (current.y + r) * BLOCK,
-            current.shape[r][c],
-            BLOCK,
-          );
+      drawCells(current.shape, current.x * BLOCK, current.y * BLOCK, BLOCK);
 
       ctx.strokeStyle = "rgba(255,255,255,0.25)";
       ctx.lineWidth = 2;
@@ -339,14 +353,12 @@ function Tetris(
       const shape = next.shape;
       const offX = Math.floor((4 - shape[0].length) / 2);
       const offY = Math.floor((4 - shape.length) / 2);
-      for (let r = 0; r < shape.length; r++)
-        for (let c = 0; c < shape[r].length; c++)
-          drawBlock(
-            NEXT_BOX_X + (offX + c) * NEXT_CELL,
-            NEXT_BOX_Y + (offY + r) * NEXT_CELL,
-            shape[r][c],
-            NEXT_CELL,
-          );
+      drawCells(
+        shape,
+        NEXT_BOX_X + offX * NEXT_CELL,
+        NEXT_BOX_Y + offY * NEXT_CELL,
+        NEXT_CELL,
+      );
       ctx.restore();
     }
 
