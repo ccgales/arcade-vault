@@ -5,14 +5,19 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 8;
+const PASSWORD_TOO_SHORT = `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`;
 
-function mapAuthError(error: { message: string }): string {
+function mapAuthError(error: { message: string; code?: string }): string {
   const msg = error.message.toLowerCase();
   if (msg.includes("invalid login credentials")) {
     return "Correo o contraseña incorrectos.";
   }
-  if (msg.includes("password") && msg.includes("6")) {
-    return "La contraseña debe tener al menos 6 caracteres.";
+  if (
+    error.code === "weak_password" ||
+    (msg.includes("password") && msg.includes("at least"))
+  ) {
+    return PASSWORD_TOO_SHORT;
   }
   if (msg.includes("email") && msg.includes("invalid")) {
     return "El correo no tiene un formato válido.";
@@ -82,8 +87,8 @@ export default function Auth() {
       fail("El correo no tiene un formato válido.");
       return;
     }
-    if (password.length < 6) {
-      fail("La contraseña debe tener al menos 6 caracteres.");
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      fail(PASSWORD_TOO_SHORT);
       return;
     }
     if (password !== confirmPassword) {
