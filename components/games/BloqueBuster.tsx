@@ -2,7 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { BLOQUE_BUSTER_SKINS, DEFAULT_SKIN } from "@/lib/skins";
-import type { BlockColorKey, BloqueBusterSkin, SkinId } from "@/lib/skins";
+import type { BlockColorKey, SkinId } from "@/lib/skins";
 
 const W = 800;
 const H = 600;
@@ -150,14 +150,6 @@ class Particle {
     this.vy *= 0.94;
     this.ttl -= dt;
     if (this.ttl <= 0) this.dead = true;
-  }
-
-  draw(ctx: CanvasRenderingContext2D, skin: BloqueBusterSkin) {
-    const alpha = Math.max(this.ttl / this.life, 0);
-    ctx.fillStyle = skin.blocks[this.colorKey];
-    ctx.globalAlpha = alpha;
-    ctx.fillRect(this.x - 2, this.y - 2, 4, 4);
-    ctx.globalAlpha = 1;
   }
 }
 
@@ -316,6 +308,18 @@ function BloqueBuster(
       for (let i = 0; i < 8; i++) particles.push(new Particle(x, y, colorKey));
     }
 
+    // Actualiza y compacta in situ: sin array ni closures nuevos por frame
+    // (SPEC 17). Mismo resultado y mismo orden que `forEach` + `filter`.
+    function updateParticles(dt: number) {
+      let w = 0;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.update(dt);
+        if (!p.dead) particles[w++] = p;
+      }
+      particles.length = w;
+    }
+
     function initGame() {
       paddle.x = (W - paddle.w) / 2;
       particles = [];
@@ -339,8 +343,7 @@ function BloqueBuster(
           gameOverReported = true;
           onGameOverRef.current(score);
         }
-        particles.forEach((p) => p.update(dt));
-        particles = particles.filter((p) => !p.dead);
+        updateParticles(dt);
         return;
       }
 
@@ -390,8 +393,7 @@ function BloqueBuster(
         }
       }
 
-      particles.forEach((p) => p.update(dt));
-      particles = particles.filter((p) => !p.dead);
+      updateParticles(dt);
 
       if (ball.y > H) {
         lives--;
@@ -416,19 +418,41 @@ function BloqueBuster(
       ctx.fillStyle = skinPalette.bg;
       ctx.fillRect(0, 0, W, H);
 
+      // Halo agrupado (SPEC 17): `shadowBlur` se fija una vez y el color del
+      // halo/relleno solo se reasigna cuando cambia de un bloque al siguiente.
+      // El orden de `blocks` se respeta: los halos vecinos se solapan.
+      const blockGlow = skinPalette.blockGlow;
+      ctx.shadowBlur = blockGlow;
+      let lastColor = "";
       for (const block of blocks) {
         if (!block.alive) continue;
         const color = skinPalette.blocks[block.color];
-        ctx.fillStyle = color;
-        ctx.shadowColor = skinPalette.blockGlow > 0 ? color : "transparent";
-        ctx.shadowBlur = skinPalette.blockGlow;
+        if (color !== lastColor) {
+          lastColor = color;
+          ctx.fillStyle = color;
+          ctx.shadowColor = blockGlow > 0 ? color : "transparent";
+        }
         ctx.fillRect(block.x + 1, block.y + 1, block.w - 2, block.h - 2);
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = "transparent";
+      }
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+
+      if (particles.length > 0) {
+        let lastKey: BlockColorKey | null = null;
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          if (p.colorKey !== lastKey) {
+            lastKey = p.colorKey;
+            ctx.fillStyle = skinPalette.blocks[p.colorKey];
+          }
+          ctx.globalAlpha = Math.max(p.ttl / p.life, 0);
+          ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+        }
+        ctx.globalAlpha = 1;
       }
 
-      particles.forEach((p) => p.draw(ctx, skinPalette));
-
+      // Sin reset entre paleta y pelota: la pelota vuelve a fijar ambos
+      // valores de halo antes de dibujar.
       ctx.fillStyle = skinPalette.paddle;
       ctx.shadowColor =
         skinPalette.paddleGlow > 0
@@ -436,8 +460,6 @@ function BloqueBuster(
           : "transparent";
       ctx.shadowBlur = skinPalette.paddleGlow;
       ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = "transparent";
 
       ctx.fillStyle = skinPalette.ball;
       ctx.shadowColor =

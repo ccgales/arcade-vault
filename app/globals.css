@@ -1577,6 +1577,31 @@ a {
   padding: 12px;
   font-size: 9px;
 }
+.auth-card.shake {
+  animation: shake 0.4s;
+}
+.auth-error {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--magenta);
+  margin-bottom: 12px;
+}
+.btn:disabled,
+.btn:disabled:hover {
+  color: var(--ink-faint);
+  border-color: var(--ink-faint);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.btn-led {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: pxblink 0.9s steps(2) infinite;
+}
 
 /* ===== salón ===== */
 .av-hall {

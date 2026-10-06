@@ -18,6 +18,28 @@ const POWERUP_DURATION = 5;
 const POWERUP_TTL = 12;
 const TRIPLE_SPREAD = 0.18;
 
+// particleRgb -> los 101 strings "rgba(r,g,b,0.00)" … "rgba(r,g,b,1.00)" que
+// antes se construían con toFixed(2) por partícula y frame.
+const particleStyleCache = new Map<string, string[]>();
+function particleStyles(rgb: string): string[] {
+  let styles = particleStyleCache.get(rgb);
+  if (!styles) {
+    styles = [];
+    for (let i = 0; i <= 100; i++)
+      styles.push(`rgba(${rgb},${(i / 100).toFixed(2)})`);
+    particleStyleCache.set(rgb, styles);
+  }
+  return styles;
+}
+
+// Equivale a `arr = arr.filter((x) => !x.dead)` (mismo orden) sin crear un
+// array nuevo cada frame.
+function removeDead<T extends { dead: boolean }>(arr: T[]) {
+  let w = 0;
+  for (let r = 0; r < arr.length; r++) if (!arr[r].dead) arr[w++] = arr[r];
+  arr.length = w;
+}
+
 class Bullet {
   x: number;
   y: number;
@@ -45,15 +67,13 @@ class Bullet {
     if (this.ttl <= 0) this.dead = true;
   }
 
-  draw(ctx: CanvasRenderingContext2D, skin: AsteroidsSkin) {
-    ctx.fillStyle = skin.bullet;
-    ctx.shadowBlur = skin.bulletGlow;
-    ctx.shadowColor = skin.bulletGlow > 0 ? skin.bullet : "transparent";
+  // fillStyle y halo los fija draw() una vez para todas las balas del frame.
+  // Cada bala sigue con su propio fill(): las del disparo triple nacen
+  // superpuestas y sus halos deben sumarse igual que antes.
+  draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = "transparent";
   }
 }
 
@@ -111,24 +131,19 @@ class Asteroid {
     ];
   }
 
-  draw(ctx: CanvasRenderingContext2D, skin: AsteroidsSkin) {
-    ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.rotate(this.rot);
-    ctx.strokeStyle = skin.asteroid;
-    ctx.lineWidth = skin.asteroidWidth;
-    ctx.shadowBlur = skin.asteroidGlow;
-    ctx.shadowColor = skin.asteroidGlow > 0 ? skin.asteroid : "transparent";
-    ctx.lineJoin = "round";
+  // Trazo, lineJoin y halo los fija draw() una vez para todos los asteroides;
+  // setTransform equivale a translate+rotate desde la identidad sin pagar un
+  // save()/restore() por asteroide.
+  draw(ctx: CanvasRenderingContext2D) {
+    const cos = Math.cos(this.rot);
+    const sin = Math.sin(this.rot);
+    ctx.setTransform(cos, sin, -sin, cos, this.x, this.y);
     ctx.beginPath();
     ctx.moveTo(this.verts[0][0], this.verts[0][1]);
     for (let i = 1; i < this.verts.length; i++)
       ctx.lineTo(this.verts[i][0], this.verts[i][1]);
     ctx.closePath();
     ctx.stroke();
-    ctx.restore();
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = "transparent";
   }
 }
 
@@ -330,10 +345,11 @@ class Particle {
     if (this.ttl <= 0) this.dead = true;
   }
 
-  draw(ctx: CanvasRenderingContext2D, skin: AsteroidsSkin) {
-    const alpha = this.ttl / this.life;
-    ctx.strokeStyle = `rgba(${skin.particleRgb},${alpha.toFixed(2)})`;
-    ctx.lineWidth = skin.particleWidth;
+  // lineWidth lo fija draw() una vez; el color sale de la tabla cacheada de
+  // particleStyles(), mismo string que alpha.toFixed(2) sin crearlo por frame.
+  draw(ctx: CanvasRenderingContext2D, styles: string[]) {
+    const idx = Math.round((this.ttl / this.life) * 100);
+    ctx.strokeStyle = styles[idx < 0 ? 0 : idx > 100 ? 100 : idx];
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
     ctx.lineTo(this.x - this.vx * 0.05, this.y - this.vy * 0.05);
@@ -433,6 +449,8 @@ function Asteroids(
     let asteroids: Asteroid[] = [];
     let particles: Particle[] = [];
     let powerUps: PowerUp[] = [];
+    // Buffer reutilizado para los fragmentos de cada frame (se vacía en update()).
+    const newAsteroids: Asteroid[] = [];
     let score = 0;
     let lives = 3;
     let level = 1;
@@ -528,16 +546,16 @@ function Asteroids(
           gameOverReported = true;
           onGameOverRef.current(score);
         }
-        particles.forEach((p) => p.update(dt));
-        particles = particles.filter((p) => !p.dead);
+        for (const p of particles) p.update(dt);
+        removeDead(particles);
         return;
       }
 
       if (state === "dead") {
         deadTimer -= dt;
-        particles.forEach((p) => p.update(dt));
-        particles = particles.filter((p) => !p.dead);
-        asteroids.forEach((a) => a.update(dt));
+        for (const p of particles) p.update(dt);
+        removeDead(particles);
+        for (const a of asteroids) a.update(dt);
         if (deadTimer <= 0) {
           state = "playing";
           ship.reset();
@@ -552,14 +570,14 @@ function Asteroids(
       }
 
       ship.update(dt, keys);
-      bullets.forEach((b) => b.update(dt));
-      asteroids.forEach((a) => a.update(dt));
-      particles.forEach((p) => p.update(dt));
-      powerUps.forEach((p) => p.update(dt));
+      for (const b of bullets) b.update(dt);
+      for (const a of asteroids) a.update(dt);
+      for (const p of particles) p.update(dt);
+      for (const p of powerUps) p.update(dt);
 
-      bullets = bullets.filter((b) => !b.dead);
-      particles = particles.filter((p) => !p.dead);
-      powerUps = powerUps.filter((p) => !p.dead);
+      removeDead(bullets);
+      removeDead(particles);
+      removeDead(powerUps);
 
       for (const p of powerUps) {
         if (!p.dead && dist(ship, p) < ship.radius + p.radius) {
@@ -569,7 +587,7 @@ function Asteroids(
       }
 
       // Bala vs asteroide
-      const newAsteroids: Asteroid[] = [];
+      newAsteroids.length = 0;
       for (const b of bullets) {
         for (const a of asteroids) {
           if (!a.dead && !b.dead && dist(b, a) < a.radius) {
@@ -589,8 +607,9 @@ function Asteroids(
           }
         }
       }
-      asteroids = asteroids.filter((a) => !a.dead).concat(newAsteroids);
-      bullets = bullets.filter((b) => !b.dead);
+      removeDead(asteroids);
+      for (const a of newAsteroids) asteroids.push(a);
+      removeDead(bullets);
 
       // Nave vs asteroide
       if (ship.invincible <= 0) {
@@ -626,10 +645,43 @@ function Asteroids(
       ctx.fillStyle = skinPalette.bg;
       ctx.fillRect(0, 0, W, H);
 
-      particles.forEach((p) => p.draw(ctx, skinPalette));
-      asteroids.forEach((a) => a.draw(ctx, skinPalette));
-      powerUps.forEach((p) => p.draw(ctx, skinPalette));
-      bullets.forEach((b) => b.draw(ctx, skinPalette));
+      // Mismo orden de dibujo que antes; el estado de ctx (trazo, halo) se fija
+      // una vez por grupo en vez de por entidad, igual que FroggerGame (SPEC 14).
+      // Al salir de cada grupo el ctx queda como lo dejaba el restore() previo:
+      // transform identidad, lineJoin "miter" y halo apagado.
+      if (particles.length > 0) {
+        const styles = particleStyles(skinPalette.particleRgb);
+        ctx.lineWidth = skinPalette.particleWidth;
+        for (const p of particles) p.draw(ctx, styles);
+      }
+
+      if (asteroids.length > 0) {
+        ctx.strokeStyle = skinPalette.asteroid;
+        ctx.lineWidth = skinPalette.asteroidWidth;
+        ctx.lineJoin = "round";
+        ctx.shadowBlur = skinPalette.asteroidGlow;
+        ctx.shadowColor =
+          skinPalette.asteroidGlow > 0 ? skinPalette.asteroid : "transparent";
+        for (const a of asteroids) a.draw(ctx);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        // PowerUp.draw hace strokeRect con el "miter" por defecto.
+        ctx.lineJoin = "miter";
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = "transparent";
+      }
+
+      for (const p of powerUps) p.draw(ctx, skinPalette);
+
+      if (bullets.length > 0) {
+        ctx.fillStyle = skinPalette.bullet;
+        ctx.shadowBlur = skinPalette.bulletGlow;
+        ctx.shadowColor =
+          skinPalette.bulletGlow > 0 ? skinPalette.bullet : "transparent";
+        for (const b of bullets) b.draw(ctx);
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = "transparent";
+      }
+
       ship.draw(ctx, skinPalette);
 
       drawPowerUpIndicator(skinPalette);

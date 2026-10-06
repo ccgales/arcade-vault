@@ -264,18 +264,20 @@ function Snake(
 
       ctx.strokeStyle = pal.grid;
       ctx.lineWidth = pal.gridWidth;
+      // Un path por dirección (SPEC 18): las líneas paralelas no se tocan, así
+      // que la cobertura es la misma, y los cruces se siguen pintando dos veces.
+      ctx.beginPath();
       for (let c = 1; c < COLS; c++) {
-        ctx.beginPath();
         ctx.moveTo(c * CELL, 0);
         ctx.lineTo(c * CELL, H);
-        ctx.stroke();
       }
+      ctx.stroke();
+      ctx.beginPath();
       for (let r = 1; r < ROWS; r++) {
-        ctx.beginPath();
         ctx.moveTo(0, r * CELL);
         ctx.lineTo(W, r * CELL);
-        ctx.stroke();
       }
+      ctx.stroke();
 
       const sprite = FRUIT_SPRITES[fruit.spriteIndex];
       ctx.shadowBlur = pal.fruitGlow;
@@ -308,18 +310,28 @@ function Snake(
       ctx.shadowBlur = 0;
       ctx.shadowColor = "transparent";
 
-      for (let i = segments.length - 1; i >= 0; i--) {
+      // Solo la cabeza lleva halo: es el punto de atención del jugador y
+      // evita pagar una sombra por segmento cuando la serpiente es larga.
+      // Cuerpo en una pasada sin halo (el reset de la fruta ya dejó
+      // shadowBlur = 0), cola → segmento 1; la cabeza sigue dibujándose la
+      // última (SPEC 18).
+      ctx.fillStyle = pal.body;
+      for (let i = segments.length - 1; i > 0; i--) {
         const s = segments[i];
-        const isHead = i === 0;
-        ctx.fillStyle = isHead ? pal.head : pal.body;
-        // Solo la cabeza lleva halo: es el punto de atención del jugador y
-        // evita pagar una sombra por segmento cuando la serpiente es larga.
-        ctx.shadowBlur = isHead ? pal.headGlow : 0;
-        ctx.shadowColor = isHead && pal.headGlow > 0 ? pal.head : "transparent";
         ctx.fillRect(s.x * CELL + 1, s.y * CELL + 1, CELL - 2, CELL - 2);
       }
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = "transparent";
+
+      const head = segments[0];
+      ctx.fillStyle = pal.head;
+      if (pal.headGlow > 0) {
+        ctx.shadowBlur = pal.headGlow;
+        ctx.shadowColor = pal.head;
+      }
+      ctx.fillRect(head.x * CELL + 1, head.y * CELL + 1, CELL - 2, CELL - 2);
+      if (pal.headGlow > 0) {
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = "transparent";
+      }
     }
 
     let lastTime: number | null = null;
